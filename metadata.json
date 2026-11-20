@@ -1,0 +1,6 @@
+{
+  "name": "عبودي AI",
+  "description": "مساعد محادثة ذكي متعدد الوسائط باللغة العربية واللغات العالمية مع دعم الصور، البث الفوري، وعرض الأكواد والماركداون.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
