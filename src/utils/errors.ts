@@ -51,7 +51,7 @@ export function mapErrorToArabic(error: unknown, isOnline = true): ChatError {
     return {
       code: 'INVALID_API_KEY',
       message:
-        'مفتاح الـ API غير صحيح أو غير مضبوط. تأكد من قيمة GEMINI_API_KEY في إعدادات البيئة.',
+        'مفتاح الـ API غير صالح أو لا يملك الصلاحيات المطلوبة. تحقق من مفتاح API في الإعدادات.',
     };
   }
 

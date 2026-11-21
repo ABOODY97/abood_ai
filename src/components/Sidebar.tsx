@@ -10,6 +10,7 @@ import {
 import type { Conversation } from '../types/chat';
 import { groupConversationsByDate } from '../utils/conversations';
 import { BrandLogo } from './BrandLogo';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -271,6 +272,10 @@ export function Sidebar({
             ))
           )}
         </nav>
+
+        <div className="p-3 empty:hidden border-t border-slate-200/70 dark:border-slate-800/80">
+          <PWAInstallButton />
+        </div>
       </aside>
     </>
   );

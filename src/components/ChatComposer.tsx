@@ -71,7 +71,7 @@ export function ChatComposer({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-3 sm:px-4 pb-4 pt-1">
+    <div className="w-full max-w-3xl mx-auto px-3 sm:px-4 pb-[calc(0.85rem+env(safe-area-inset-bottom))] pt-1">
       {uploadNotice && (
         <div
           role="status"
@@ -139,8 +139,8 @@ export function ChatComposer({
             onClick={() => fileInputRef.current?.click()}
             disabled={isStreaming}
             aria-label="إرفاق صور"
-            title="إرفاق صور (أو اسحب وأفلت / الصق من الحافظة)"
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-40 transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
+            title="إرفاق صور من المعرض أو الكاميرا (أو السحب والإفلات / اللصق)"
+            className="inline-flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-40 transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
           >
             <Paperclip className="w-5 h-5" />
           </button>
@@ -153,9 +153,9 @@ export function ChatComposer({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder="اكتب رسالتك إلى عبودي AI... (يمكنك لصق أو سحب الصور هنا)"
+            placeholder="اسأل عبودي AI أي شيء..."
             aria-label="حقل كتابة الرسالة"
-            className="flex-1 resize-none bg-transparent border-0 py-2 px-1 text-[15.5px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none max-h-[180px] overflow-y-auto"
+            className="flex-1 resize-none bg-transparent border-0 py-2.5 sm:py-2 px-1 text-[16px] sm:text-[15.5px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none max-h-[180px] overflow-y-auto"
           />
 
           {isStreaming ? (
@@ -164,7 +164,7 @@ export function ChatComposer({
               onClick={onStop}
               aria-label="إيقاف التوليد"
               title="إيقاف التوليد"
-              className="inline-flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white text-xs font-semibold transition-colors shrink-0 whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
+              className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-10 px-3.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white text-xs font-semibold transition-colors shrink-0 whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
               <span className="hidden sm:inline">إيقاف التوليد</span>
@@ -176,7 +176,7 @@ export function ChatComposer({
               disabled={!canSend}
               aria-label="إرسال الرسالة"
               title="إرسال (Enter)"
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 transition-colors shrink-0 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-teal-600"
+              className="inline-flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 transition-colors shrink-0 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-teal-600"
             >
               <ArrowUp className="w-5 h-5" />
             </button>

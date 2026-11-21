@@ -1,3 +1,5 @@
+import type { ThinkingOption } from '../config/models.config';
+
 export interface ImageAttachment {
   id: string;
   name: string;
@@ -13,6 +15,11 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'model';
   text: string;
+  /** Optional thought summary returned by thinking-capable Gemini models */
+  thought?: string;
+  /** Model ID and display name used to generate this assistant response */
+  modelId?: string;
+  modelName?: string;
   images?: ImageAttachment[];
   createdAt: number;
   stopped?: boolean;
@@ -22,6 +29,9 @@ export interface Conversation {
   id: string;
   title: string;
   messages: ChatMessage[];
+  /** Per-conversation preferred model and thinking level */
+  modelId?: string;
+  thinkingLevel?: ThinkingOption;
   createdAt: number;
   updatedAt: number;
 }
@@ -31,4 +41,5 @@ export type ThemeMode = 'light' | 'dark';
 export interface ChatError {
   code: string;
   message: string;
+  fallbackThinkingLevel?: ThinkingOption;
 }

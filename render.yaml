@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: aboodi-ai
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npx tsx server.ts
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: RATE_LIMIT_MAX
+        value: "30"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # اختياري: لم يعد GEMINI_API_KEY مطلوباً لأن كل مستخدم يُدخل مفتاحه داخل التطبيق.
+      # يمكن إضافته يدوياً في لوحة Render كخيار احتياطي فقط إذا لم يُرسل العميل مفتاحاً.

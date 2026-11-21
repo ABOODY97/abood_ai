@@ -1,7 +1,16 @@
+import type { ThinkingOption } from '../config/models.config';
+
 export type SseChatEvent =
+  | { type: 'meta'; modelId: string; modelName: string; thinkingLevel: ThinkingOption }
+  | { type: 'thought'; text: string }
   | { type: 'chunk'; text: string }
   | { type: 'done' }
-  | { type: 'error'; code: string; message: string };
+  | {
+      type: 'error';
+      code: string;
+      message: string;
+      fallbackThinkingLevel?: ThinkingOption;
+    };
 
 /**
  * Incrementally parses Server-Sent Events (SSE) lines from a stream buffer.
@@ -31,9 +40,23 @@ export function parseSseBuffer(buffer: string): {
     if (!rawJson) continue;
 
     try {
-      const parsed = JSON.parse(rawJson) as Partial<SseChatEvent>;
+      const parsed = JSON.parse(rawJson) as Record<string, unknown>;
       if (parsed.type === 'chunk' && typeof parsed.text === 'string') {
         events.push({ type: 'chunk', text: parsed.text });
+      } else if (parsed.type === 'thought' && typeof parsed.text === 'string') {
+        events.push({ type: 'thought', text: parsed.text });
+      } else if (
+        parsed.type === 'meta' &&
+        typeof parsed.modelId === 'string' &&
+        typeof parsed.modelName === 'string' &&
+        typeof parsed.thinkingLevel === 'string'
+      ) {
+        events.push({
+          type: 'meta',
+          modelId: parsed.modelId,
+          modelName: parsed.modelName,
+          thinkingLevel: parsed.thinkingLevel as ThinkingOption,
+        });
       } else if (parsed.type === 'done') {
         events.push({ type: 'done' });
       } else if (
@@ -44,6 +67,10 @@ export function parseSseBuffer(buffer: string): {
           type: 'error',
           code: typeof parsed.code === 'string' ? parsed.code : 'SERVER_ERROR',
           message: parsed.message,
+          fallbackThinkingLevel:
+            typeof parsed.fallbackThinkingLevel === 'string'
+              ? (parsed.fallbackThinkingLevel as ThinkingOption)
+              : undefined,
         });
       }
     } catch {
