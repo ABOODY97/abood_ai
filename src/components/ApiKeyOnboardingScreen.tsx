@@ -19,6 +19,7 @@ import {
   validateApiKeyWithServer,
 } from '../utils/apiKeys';
 import type { KeyValidationResult } from '../utils/apiKeys';
+import { useAssistantName } from '../hooks/useAssistantName';
 import { BrandLogo } from './BrandLogo';
 
 const AI_STUDIO_KEY_URL = 'https://aistudio.google.com/apikey';
@@ -38,6 +39,7 @@ export function ApiKeyOnboardingScreen({
   currentModelId,
   onSaveKey,
 }: ApiKeyOnboardingScreenProps) {
+  const [assistantName] = useAssistantName();
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [keyNameInput, setKeyNameInput] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -116,7 +118,7 @@ export function ApiKeyOnboardingScreen({
         <div className="flex items-center gap-2.5">
           <BrandLogo size="sm" />
           <span className="text-base font-bold text-slate-900 dark:text-slate-50">
-            عبودي AI
+            {assistantName}
           </span>
         </div>
 
@@ -150,7 +152,7 @@ export function ApiKeyOnboardingScreen({
           <div className="flex flex-col items-center text-center mb-6">
             <BrandLogo size="lg" className="mb-4" />
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 [text-wrap:balance]">
-              أهلاً بك في عبودي AI
+              أهلاً بك في {assistantName}
             </h1>
             <p className="mt-2 text-sm sm:text-[15px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">
               للبدء، أدخل مفتاح Gemini API الخاص بك. يُحفظ المفتاح على جهازك فقط داخل هذا المتصفح.
@@ -323,6 +325,9 @@ export function ApiKeyOnboardingScreen({
                   <ExternalLink className="w-3 h-3" />
                 </a>
                 .
+              </p>
+              <p className="text-amber-800 dark:text-amber-300">
+                إذا كان مفتاحك مجانيًا فالأفضل استخدام Gemini Flash-Lite، فهو أسرع وأقل عرضة لأخطاء الازدحام وحدود الاستخدام.
               </p>
             </div>
           </form>

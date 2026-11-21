@@ -1,11 +1,15 @@
-import { AlertCircle, KeyRound, RotateCw, Settings, X } from 'lucide-react';
+import { AlertCircle, KeyRound, RotateCw, Settings, X, Zap } from 'lucide-react';
 import type { ChatError } from '../types/chat';
 import type { ApiKeyEntry } from '../utils/apiKeys';
 
+const FLASH_LITE_MODEL_ID = 'gemini-3.1-flash-lite';
+
 interface ErrorBannerProps {
   error: ChatError;
+  currentModelId?: string;
   alternativeKeys?: ApiKeyEntry[];
   onSwitchKey?: (keyId: string) => void;
+  onTryFlashLite?: () => void;
   onOpenSettings?: () => void;
   onRetry: () => void;
   onDismiss: () => void;
@@ -13,8 +17,10 @@ interface ErrorBannerProps {
 
 export function ErrorBanner({
   error,
+  currentModelId,
   alternativeKeys = [],
   onSwitchKey,
+  onTryFlashLite,
   onOpenSettings,
   onRetry,
   onDismiss,
@@ -28,6 +34,22 @@ export function ErrorBanner({
     (error.code === 'INVALID_API_KEY' || error.code === 'API_KEY_MISSING') &&
     Boolean(onOpenSettings);
 
+  const isFlashLiteCandidateError =
+    error.status === 429 ||
+    error.status === 503 ||
+    error.status === 404 ||
+    error.code === 'RATE_LIMIT' ||
+    error.code === 'MODEL_NOT_FOUND' ||
+    error.code === 'HTTP_429' ||
+    error.code === 'HTTP_503' ||
+    error.code === 'HTTP_404' ||
+    /\b(429|503|404)\b/.test(error.message);
+
+  const showTryFlashLite =
+    isFlashLiteCandidateError &&
+    currentModelId !== FLASH_LITE_MODEL_ID &&
+    Boolean(onTryFlashLite);
+
   return (
     <div role="alert" className="mx-auto w-full max-w-3xl px-4 mb-3">
       <div className="rounded-xl border border-rose-200 dark:border-rose-900/70 bg-rose-50/90 dark:bg-rose-950/40 px-4 py-3 text-rose-900 dark:text-rose-100 space-y-2.5">
@@ -37,7 +59,7 @@ export function ErrorBanner({
             <p className="text-sm leading-relaxed">{error.message}</p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center">
             {showOpenSettings && onOpenSettings && (
               <button
                 type="button"
@@ -46,6 +68,16 @@ export function ErrorBanner({
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span>الإعدادات</span>
+              </button>
+            )}
+            {showTryFlashLite && onTryFlashLite && (
+              <button
+                type="button"
+                onClick={onTryFlashLite}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-300 dark:border-rose-800 bg-white dark:bg-[#19202D] hover:border-teal-600 dark:hover:border-teal-500 text-slate-900 dark:text-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
+              >
+                <Zap className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
+                <span>جرّب Flash-Lite</span>
               </button>
             )}
             <button

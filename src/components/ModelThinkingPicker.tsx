@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Brain, Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { Brain, Check, ChevronDown, Info, SlidersHorizontal, X } from 'lucide-react';
 import {
   MODELS,
   THINKING_LABELS,
@@ -8,6 +8,18 @@ import {
   resolveThinkingLevelForModel,
 } from '../config/models.config';
 import type { ThinkingOption } from '../config/models.config';
+
+const FREE_KEY_TIP_DISMISSED_KEY = 'aboodi_ai_free_key_tip_dismissed_v1';
+const FLASH_LITE_MODEL_ID = 'gemini-3.1-flash-lite';
+
+function readFreeTipDismissed(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(FREE_KEY_TIP_DISMISSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 interface ModelThinkingPickerProps {
   modelId: string;
@@ -25,10 +37,22 @@ export function ModelThinkingPicker({
   onSelectThinking,
 }: ModelThinkingPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [freeTipDismissed, setFreeTipDismissed] = useState<boolean>(
+    readFreeTipDismissed
+  );
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined' ? window.innerWidth < 640 : false
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const handleDismissFreeTip = () => {
+    setFreeTipDismissed(true);
+    try {
+      window.localStorage.setItem(FREE_KEY_TIP_DISMISSED_KEY, '1');
+    } catch {
+      // Ignore storage write errors
+    }
+  };
 
   const activeModel = getModelById(modelId);
   const effectiveThinking = resolveThinkingLevelForModel(
@@ -137,6 +161,38 @@ export function ModelThinkingPicker({
             );
           })}
         </div>
+
+        {/* Free API key recommendation banner (dismissible, persisted in localStorage) */}
+        {!freeTipDismissed && (
+          <div className="mt-2.5 rounded-xl border border-amber-200/90 dark:border-amber-900/60 bg-amber-50/75 dark:bg-amber-950/30 px-3 py-2.5 text-xs text-amber-950 dark:text-amber-200">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2 min-w-0">
+                <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  إذا كان مفتاحك مجانيًا فالأفضل استخدام Gemini Flash-Lite، فهو أسرع وأقل عرضة لأخطاء الازدحام وحدود الاستخدام.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDismissFreeTip}
+                aria-label="إغلاق توصية المفاتيح المجانية"
+                title="إغلاق"
+                className="p-1 rounded-md text-amber-700 dark:text-amber-300 hover:bg-amber-200/60 dark:hover:bg-amber-900/50 transition-colors shrink-0 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="mt-2 ps-5">
+              <button
+                type="button"
+                onClick={() => onSelectModel(FLASH_LITE_MODEL_ID)}
+                className="inline-flex items-center px-2.5 py-1 rounded-lg bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white text-[11.5px] font-semibold transition-colors cursor-pointer"
+              >
+                استخدم Flash-Lite
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Hairline divider */}

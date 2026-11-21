@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Brain, Check, ChevronDown, Copy, RotateCw } from 'lucide-react';
 import type { ChatMessage, ImageAttachment } from '../types/chat';
 import { detectTextDirection } from '../utils/direction';
+import { useAssistantName } from '../hooks/useAssistantName';
 import { BrandLogo } from './BrandLogo';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -18,6 +19,7 @@ export function MessageBubble({
   onRegenerate,
   onPreviewImage,
 }: MessageBubbleProps) {
+  const [assistantName] = useAssistantName();
   const [copied, setCopied] = useState(false);
   const [thoughtOpen, setThoughtOpen] = useState(false);
 
@@ -99,7 +101,7 @@ export function MessageBubble({
 
   return (
     <article
-      aria-label="رد عبودي AI"
+      aria-label={`رد ${assistantName}`}
       className="flex items-start gap-3 sm:gap-4 w-full"
     >
       <BrandLogo size="sm" className="mt-0.5" />
@@ -107,7 +109,7 @@ export function MessageBubble({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            عبودي AI
+            {assistantName}
           </span>
           {message.stopped && !isStreaming && (
             <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -156,7 +158,11 @@ export function MessageBubble({
               aria-live="polite"
               className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 py-0.5"
             >
-              <span>{isActivelyThinking ? 'عبودي AI يفكر' : 'عبودي AI يكتب'}</span>
+              <span>
+                {isActivelyThinking
+                  ? `${assistantName} يفكر`
+                  : `${assistantName} يكتب`}
+              </span>
               <span
                 className="inline-flex items-center gap-1"
                 aria-hidden="true"
@@ -185,7 +191,7 @@ export function MessageBubble({
               <button
                 type="button"
                 onClick={handleCopyMessage}
-                aria-label="نسخ رد عبودي AI"
+                aria-label={`نسخ رد ${assistantName}`}
                 className="inline-flex items-center gap-1.5 min-h-[34px] px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
               >
                 {copied ? (

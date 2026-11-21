@@ -1,6 +1,11 @@
 import type { ChatError } from '../types/chat';
+import { DEFAULT_ASSISTANT_NAME } from './assistantName';
 
-export function mapErrorToArabic(error: unknown, isOnline = true): ChatError {
+export function mapErrorToArabic(
+  error: unknown,
+  isOnline = true,
+  assistantName = DEFAULT_ASSISTANT_NAME
+): ChatError {
   if (!isOnline) {
     return {
       code: 'OFFLINE',
@@ -9,7 +14,7 @@ export function mapErrorToArabic(error: unknown, isOnline = true): ChatError {
   }
 
   if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
-    const known = error as { code: string; message: string };
+    const known = error as { code: string; message: string; status?: number };
     if (typeof known.code === 'string' && typeof known.message === 'string') {
       return known;
     }
@@ -78,6 +83,6 @@ export function mapErrorToArabic(error: unknown, isOnline = true): ChatError {
     code: 'UNKNOWN_ERROR',
     message: raw && /[\u0600-\u06FF]/.test(raw)
       ? raw
-      : 'حدث خطأ غير متوقع أثناء الاتصال بعبودي AI. يرجى الضغط على "إعادة المحاولة".',
+      : `حدث خطأ غير متوقع أثناء الاتصال بـ ${assistantName}. يرجى الضغط على "إعادة المحاولة".`,
   };
 }

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Download, Share, X } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { useAssistantName } from '../hooks/useAssistantName';
 
 export function PWAInstallButton() {
+  const [assistantName] = useAssistantName();
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
@@ -15,7 +17,7 @@ export function PWAInstallButton() {
       <button
         type="button"
         onClick={() => void install()}
-        aria-label="تثبيت تطبيق عبودي AI"
+        aria-label={`تثبيت تطبيق ${assistantName}`}
         className="w-full inline-flex items-center justify-center gap-2 min-h-[40px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#19202D] hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
       >
         <Download className="w-4 h-4 text-teal-700 dark:text-teal-400" />
@@ -30,7 +32,7 @@ export function PWAInstallButton() {
         <button
           type="button"
           onClick={() => setShowIOSGuide(true)}
-          aria-label="إضافة عبودي AI إلى الشاشة الرئيسية"
+          aria-label={`إضافة ${assistantName} إلى الشاشة الرئيسية`}
           className="w-full inline-flex items-center justify-center gap-2 min-h-[40px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#19202D] hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
         >
           <Share className="w-4 h-4 text-teal-700 dark:text-teal-400" />
@@ -51,7 +53,7 @@ export function PWAInstallButton() {
             >
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  تثبيت عبودي AI على iOS
+                  تثبيت {assistantName} على iOS
                 </h3>
                 <button
                   type="button"
@@ -70,7 +72,7 @@ export function PWAInstallButton() {
                   مرّر للأسفل واختر <strong>إضافة إلى الشاشة الرئيسية (Add to Home Screen)</strong>.
                 </li>
                 <li>
-                  اضغط <strong>إضافة</strong> ليظهر عبودي AI كتطبيق مستقل.
+                  اضغط <strong>إضافة</strong> ليظهر {assistantName} كتطبيق مستقل.
                 </li>
               </ol>
               <button

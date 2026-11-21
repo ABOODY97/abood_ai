@@ -41,5 +41,6 @@ export type ThemeMode = 'light' | 'dark';
 export interface ChatError {
   code: string;
   message: string;
+  status?: number;
   fallbackThinkingLevel?: ThinkingOption;
 }

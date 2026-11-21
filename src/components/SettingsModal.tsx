@@ -26,6 +26,11 @@ import {
   validateApiKeyWithServer,
 } from '../utils/apiKeys';
 import type { ApiKeyEntry, KeyValidationResult } from '../utils/apiKeys';
+import {
+  DEFAULT_ASSISTANT_NAME,
+  MAX_ASSISTANT_NAME_LENGTH,
+} from '../utils/assistantName';
+import { useAssistantName } from '../hooks/useAssistantName';
 
 const AI_STUDIO_KEY_URL = 'https://aistudio.google.com/apikey';
 
@@ -56,6 +61,8 @@ export function SettingsModal({
   onExportConversations,
   onClearAllData,
 }: SettingsModalProps) {
+  const [assistantName, setAssistantName] = useAssistantName();
+  const [assistantNameInput, setAssistantNameInput] = useState(assistantName);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -79,6 +86,13 @@ export function SettingsModal({
 
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const newKeyInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setAssistantNameInput(assistantName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -232,6 +246,48 @@ export function SettingsModal({
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-5">
+          {/* Assistant Name Section */}
+          <section aria-label="تخصيص اسم المساعد" className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <label
+                htmlFor="settings-assistant-name"
+                className="text-sm font-bold text-slate-900 dark:text-slate-100"
+              >
+                اسم المساعد
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setAssistantName(DEFAULT_ASSISTANT_NAME);
+                  setAssistantNameInput(DEFAULT_ASSISTANT_NAME);
+                }}
+                disabled={assistantName === DEFAULT_ASSISTANT_NAME}
+                className="text-xs font-medium text-teal-700 dark:text-teal-400 hover:underline disabled:opacity-45 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
+              >
+                استعادة الاسم الافتراضي
+              </button>
+            </div>
+            <input
+              id="settings-assistant-name"
+              type="text"
+              maxLength={MAX_ASSISTANT_NAME_LENGTH}
+              value={assistantNameInput}
+              onChange={(e) => {
+                const nextVal = e.target.value;
+                setAssistantNameInput(nextVal);
+                setAssistantName(nextVal);
+              }}
+              onBlur={() => setAssistantNameInput(assistantName)}
+              placeholder={DEFAULT_ASSISTANT_NAME}
+              className="w-full min-h-[42px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-[#0F141D] px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-teal-600 dark:focus:border-teal-500 transition-colors"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              يُحفظ اسم المساعد في هذا المتصفح فقط (الحد الأقصى {MAX_ASSISTANT_NAME_LENGTH} حرفاً).
+            </p>
+          </section>
+
+          <hr className="border-0 border-t border-slate-200/80 dark:border-slate-800" />
+
           {/* Security Notice */}
           <div className="rounded-xl border border-amber-200/90 dark:border-amber-900/60 bg-amber-50/75 dark:bg-amber-950/30 p-3.5 space-y-1.5 text-xs text-amber-950 dark:text-amber-200 leading-relaxed">
             <div className="flex items-start gap-2">

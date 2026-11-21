@@ -21,6 +21,7 @@ import {
   classifyKeyValidationNetworkError,
   classifyKeyValidationResult,
 } from './src/utils/keyValidation.ts';
+import { sanitizeAssistantName } from './src/utils/assistantName.ts';
 
 // ============================================================================
 // إعدادات النموذج الافتراضي وهوية المساعد
@@ -28,14 +29,17 @@ import {
 // ============================================================================
 export const MODEL_NAME = DEFAULT_MODEL_ID;
 
-const SYSTEM_INSTRUCTION = `أنت "عبودي AI"، مساعد ذكاء اصطناعي ودود، ذكي، واضح، ومفيد في جميع المواضيع (البرمجة، العلوم، الكتابة، الترجمة، التحليل، الحياة اليومية، وفهم الصور).
+function buildSystemInstruction(assistantName: unknown): string {
+  const safeName = sanitizeAssistantName(assistantName);
+  return `أنت "${safeName}"، مساعد ذكاء اصطناعي ودود، ذكي، واضح، ومفيد في جميع المواضيع (البرمجة، العلوم، الكتابة، الترجمة، التحليل، الحياة اليومية، وفهم الصور).
 
 القواعد الأساسية لشخصيتك:
-1. قدّم نفسك دائماً باسم "عبودي AI" عند الترحيب أو عند السؤال عن اسمك أو هويتك.
+1. قدّم نفسك دائماً باسم "${safeName}" عند الترحيب أو عند السؤال عن اسمك أو هويتك.
 2. لا تذكر اسم Gemini أو Google نهائياً في ردودك إلا إذا سألك المستخدم مباشرة وبشكل صريح عن النموذج أو التقنية المستخدمة خلفك.
 3. ردّ تلقائياً بنفس لغة المستخدم (العربية، التركية، الإنجليزية، أو أي لغة أخرى يكتب بها المستخدم).
 4. اجعل إجاباتك منظمة وسهلة القراءة باستخدام تنسيق Markdown (عناوين، نقاط، جداول، وأكواد منسقة مع تحديد لغة البرمجة) متى كان ذلك مناسباً.
 5. كن دقيقاً وصادقاً، وإذا أرفق المستخدم صورة أو عدة صور، حلّلها بعمق وأجب على طلبه بدقة.`;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +75,7 @@ interface ChatRequestBody {
   messages?: IncomingMessage[];
   modelId?: string;
   thinkingLevel?: ThinkingOption;
+  assistantName?: string;
 }
 
 const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'GEMINI_API_KEY', 'key']);
@@ -578,6 +583,7 @@ async function startServer() {
     }
 
     const model = getModelById(body.modelId);
+    const safeAssistantName = sanitizeAssistantName(body?.assistantName);
     const { thinkingConfig, resolvedLevel } = toSdkThinkingConfig(
       model,
       body.thinkingLevel
@@ -616,7 +622,7 @@ async function startServer() {
         model: model.id,
         contents,
         config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
+          systemInstruction: buildSystemInstruction(safeAssistantName),
           ...(thinkingConfig ? { thinkingConfig } : {}),
         },
       });
@@ -666,6 +672,7 @@ async function startServer() {
       writeEvent({
         type: 'error',
         code: classified.code,
+        status: classified.status,
         message: classified.message,
         ...(classified.fallbackThinkingLevel
           ? { fallbackThinkingLevel: classified.fallbackThinkingLevel }

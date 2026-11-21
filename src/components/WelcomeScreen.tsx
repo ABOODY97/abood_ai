@@ -1,4 +1,5 @@
 import { ArrowUpLeft } from 'lucide-react';
+import { useAssistantName } from '../hooks/useAssistantName';
 import { BrandLogo } from './BrandLogo';
 
 interface SuggestionItem {
@@ -39,13 +40,15 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onSelectPrompt }: WelcomeScreenProps) {
+  const [assistantName] = useAssistantName();
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14">
       <div className="w-full max-w-2xl flex flex-col items-center text-center">
         <BrandLogo size="lg" className="mb-5" />
 
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 [text-wrap:balance]">
-          أهلاً بك في عبودي AI
+          أهلاً بك في {assistantName}
         </h1>
 
         <p className="mt-2.5 text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-lg leading-relaxed">

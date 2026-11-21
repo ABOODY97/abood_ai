@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { Conversation } from '../types/chat';
 import { groupConversationsByDate } from '../utils/conversations';
+import { useAssistantName } from '../hooks/useAssistantName';
 import { BrandLogo } from './BrandLogo';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -33,6 +34,7 @@ export function Sidebar({
   onRenameChat,
   onDeleteChat,
 }: SidebarProps) {
+  const [assistantName] = useAssistantName();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export function Sidebar({
             <div className="flex items-center gap-2.5 min-w-0">
               <BrandLogo size="sm" />
               <span className="text-base font-bold text-slate-900 dark:text-slate-50 whitespace-nowrap truncate">
-                عبودي AI
+                {assistantName}
               </span>
             </div>
             <button

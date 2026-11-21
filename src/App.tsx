@@ -51,6 +51,11 @@ import {
 import { mapErrorToArabic } from './utils/errors';
 import { processImageFiles } from './utils/imageFiles';
 import { parseSseBuffer } from './utils/sse';
+import {
+  ASSISTANT_NAME_STORAGE_KEY,
+  DEFAULT_ASSISTANT_NAME,
+} from './utils/assistantName';
+import { useAssistantName } from './hooks/useAssistantName';
 import { Sidebar } from './components/Sidebar';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { MessageBubble } from './components/MessageBubble';
@@ -66,6 +71,7 @@ import { SettingsModal } from './components/SettingsModal';
 const THEME_STORAGE_KEY = 'aboodi_ai_theme';
 const MODEL_STORAGE_KEY = 'aboodi_ai_model';
 const THINKING_STORAGE_KEY = 'aboodi_ai_thinking';
+const FLASH_LITE_MODEL_ID = 'gemini-3.1-flash-lite';
 
 function getInitialTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'light';
@@ -109,6 +115,7 @@ function getInitialThinkingLevel(modelId: string): ThinkingOption {
 }
 
 export default function App() {
+  const [assistantName, setAssistantName] = useAssistantName();
   const [apiKeyStore, setApiKeyStore] = useState<ApiKeyStore>(() =>
     loadApiKeyStore()
   );
@@ -182,6 +189,11 @@ export default function App() {
     const candidate = activeConversation?.thinkingLevel ?? defaultThinkingLevel;
     return resolveThinkingLevelForModel(model, candidate);
   }, [activeConversation?.thinkingLevel, currentModelId, defaultThinkingLevel]);
+
+  // Sync browser tab title with customizable assistant name
+  useEffect(() => {
+    document.title = `${assistantName} — مساعدك الذكي للمحادثة`;
+  }, [assistantName]);
 
   // Sync theme to <html class="dark"> and localStorage
   useEffect(() => {
@@ -392,6 +404,7 @@ export default function App() {
             messages: payloadMessages,
             modelId: selectedModel.id,
             thinkingLevel: thinkingLevelToUse,
+            assistantName,
           }),
           signal: controller.signal,
         });
@@ -410,6 +423,7 @@ export default function App() {
             }
             throw {
               code: errJson.code || `HTTP_${response.status}`,
+              status: response.status,
               message: errJson.message || `خطأ في الخادم (${response.status})`,
               fallbackThinkingLevel: errJson.fallbackThinkingLevel,
             };
@@ -417,7 +431,11 @@ export default function App() {
           if (response.status === 401) {
             setForceOnboarding(true);
           }
-          throw new Error(`HTTP ${response.status}`);
+          throw {
+            code: `HTTP_${response.status}`,
+            status: response.status,
+            message: `خطأ في الخادم (رمز الخطأ: ${response.status})`,
+          };
         }
 
         if (!response.body) {
@@ -496,6 +514,7 @@ export default function App() {
             } else if (event.type === 'error') {
               throw {
                 code: event.code,
+                status: event.status,
                 message: event.message,
                 fallbackThinkingLevel: event.fallbackThinkingLevel,
               };
@@ -506,7 +525,7 @@ export default function App() {
         if (accumulatedText.trim().length === 0) {
           throw {
             code: 'EMPTY_RESPONSE',
-            message: 'لم يصل رد من عبودي AI. يرجى الضغط على "إعادة المحاولة".',
+            message: `لم يصل رد من ${assistantName}. يرجى الضغط على "إعادة المحاولة".`,
           };
         }
 
@@ -531,7 +550,8 @@ export default function App() {
         } else {
           const mapped = mapErrorToArabic(
             err,
-            typeof navigator === 'undefined' ? true : navigator.onLine
+            typeof navigator === 'undefined' ? true : navigator.onLine,
+            assistantName
           );
 
           // Automatic fallback if the model rejected the requested thinking setting
@@ -576,7 +596,7 @@ export default function App() {
         setStreamingMessageId(null);
       }
     },
-    [activeApiKey?.key, stopGeneration]
+    [activeApiKey?.key, assistantName, stopGeneration]
   );
 
   const sendMessage = useCallback(
@@ -722,6 +742,72 @@ export default function App() {
   }, [
     activeConversation,
     currentModelId,
+    currentThinkingLevel,
+    isStreaming,
+    streamAssistantReply,
+  ]);
+
+  const handleTryFlashLite = useCallback(() => {
+    if (isStreaming) return;
+    const flashLite = getModelById(FLASH_LITE_MODEL_ID);
+    const nextThinking = resolveThinkingLevelForModel(
+      flashLite,
+      currentThinkingLevel
+    );
+
+    setDefaultModelId(flashLite.id);
+    setDefaultThinkingLevel(nextThinking);
+    setChatError(null);
+
+    if (activeConversation) {
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === activeConversation.id
+            ? {
+                ...conv,
+                modelId: flashLite.id,
+                thinkingLevel: nextThinking,
+              }
+            : conv
+        )
+      );
+    }
+
+    const failed = lastFailedRequestRef.current;
+    if (failed) {
+      void streamAssistantReply(
+        failed.conversationId,
+        failed.history,
+        flashLite.id,
+        nextThinking
+      );
+      return;
+    }
+
+    if (activeConversation && activeConversation.messages.length > 0) {
+      const msgs = activeConversation.messages;
+      const last = msgs[msgs.length - 1];
+      if (last.role === 'user') {
+        void streamAssistantReply(
+          activeConversation.id,
+          msgs,
+          flashLite.id,
+          nextThinking
+        );
+      } else {
+        const sliced = sliceMessagesForRegenerate(msgs, last.id);
+        if (sliced) {
+          void streamAssistantReply(
+            activeConversation.id,
+            sliced,
+            flashLite.id,
+            nextThinking
+          );
+        }
+      }
+    }
+  }, [
+    activeConversation,
     currentThinkingLevel,
     isStreaming,
     streamAssistantReply,
@@ -897,7 +983,7 @@ export default function App() {
   const handleExportConversations = useCallback(() => {
     // Export strictly conversations only — never include API keys
     const payload = {
-      app: 'عبودي AI',
+      app: assistantName,
       exportedAt: new Date().toISOString(),
       conversations,
     };
@@ -914,7 +1000,7 @@ export default function App() {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-  }, [conversations]);
+  }, [assistantName, conversations]);
 
   const handleClearAllData = useCallback(() => {
     stopGeneration();
@@ -926,6 +1012,7 @@ export default function App() {
     setActiveId(null);
     setConversations([]);
     setApiKeyStore(createEmptyApiKeyStore());
+    setAssistantName(DEFAULT_ASSISTANT_NAME);
     setForceOnboarding(false);
     lastFailedRequestRef.current = null;
     try {
@@ -933,10 +1020,11 @@ export default function App() {
       window.localStorage.removeItem(STORAGE_KEY);
       window.localStorage.removeItem(MODEL_STORAGE_KEY);
       window.localStorage.removeItem(THINKING_STORAGE_KEY);
+      window.localStorage.removeItem(ASSISTANT_NAME_STORAGE_KEY);
     } catch {
       // Ignore storage removal errors
     }
-  }, [stopGeneration]);
+  }, [setAssistantName, stopGeneration]);
 
   const hasMessages = Boolean(
     activeConversation && activeConversation.messages.length > 0
@@ -1119,10 +1207,12 @@ export default function App() {
         {chatError && (
           <ErrorBanner
             error={chatError}
+            currentModelId={currentModelId}
             alternativeKeys={alternativeApiKeys}
             onSwitchKey={handleSwitchKeyFromError}
             onOpenSettings={() => setSettingsOpen(true)}
             onRetry={handleRetry}
+            onTryFlashLite={handleTryFlashLite}
             onDismiss={() => setChatError(null)}
           />
         )}

@@ -8,6 +8,7 @@ export type SseChatEvent =
   | {
       type: 'error';
       code: string;
+      status?: number;
       message: string;
       fallbackThinkingLevel?: ThinkingOption;
     };
@@ -66,6 +67,8 @@ export function parseSseBuffer(buffer: string): {
         events.push({
           type: 'error',
           code: typeof parsed.code === 'string' ? parsed.code : 'SERVER_ERROR',
+          status:
+            typeof parsed.status === 'number' ? parsed.status : undefined,
           message: parsed.message,
           fallbackThinkingLevel:
             typeof parsed.fallbackThinkingLevel === 'string'

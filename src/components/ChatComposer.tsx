@@ -3,6 +3,7 @@ import type { ClipboardEvent, KeyboardEvent } from 'react';
 import { ArrowUp, Paperclip, Square, X } from 'lucide-react';
 import type { ImageAttachment } from '../types/chat';
 import { detectTextDirection } from '../utils/direction';
+import { useAssistantName } from '../hooks/useAssistantName';
 
 interface ChatComposerProps {
   value: string;
@@ -29,6 +30,7 @@ export function ChatComposer({
   uploadNotice,
   onClearUploadNotice,
 }: ChatComposerProps) {
+  const [assistantName] = useAssistantName();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -153,7 +155,7 @@ export function ChatComposer({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder="اسأل عبودي AI أي شيء..."
+            placeholder={`اسأل ${assistantName} أي شيء...`}
             aria-label="حقل كتابة الرسالة"
             className="flex-1 resize-none bg-transparent border-0 py-2.5 sm:py-2 px-1 text-[16px] sm:text-[15.5px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none max-h-[180px] overflow-y-auto"
           />
