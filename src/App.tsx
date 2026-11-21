@@ -4,6 +4,8 @@ import {
   ArrowDown,
   ImagePlus,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
   Settings,
@@ -48,7 +50,7 @@ import {
   saveConversationsToStorage,
   sliceMessagesForRegenerate,
 } from './utils/conversations';
-import { mapErrorToArabic } from './utils/errors';
+import { mapError } from './utils/errors';
 import { processImageFiles } from './utils/imageFiles';
 import { parseSseBuffer } from './utils/sse';
 import {
@@ -56,6 +58,7 @@ import {
   DEFAULT_ASSISTANT_NAME,
 } from './utils/assistantName';
 import { useAssistantName } from './hooks/useAssistantName';
+import { useLanguage } from './hooks/useLanguage';
 import { Sidebar } from './components/Sidebar';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { MessageBubble } from './components/MessageBubble';
@@ -116,6 +119,7 @@ function getInitialThinkingLevel(modelId: string): ThinkingOption {
 
 export default function App() {
   const [assistantName, setAssistantName] = useAssistantName();
+  const { lang, t, dir } = useLanguage();
   const [apiKeyStore, setApiKeyStore] = useState<ApiKeyStore>(() =>
     loadApiKeyStore()
   );
@@ -190,10 +194,10 @@ export default function App() {
     return resolveThinkingLevelForModel(model, candidate);
   }, [activeConversation?.thinkingLevel, currentModelId, defaultThinkingLevel]);
 
-  // Sync browser tab title with customizable assistant name
+  // Sync browser tab title with customizable assistant name and UI language
   useEffect(() => {
-    document.title = `${assistantName} — مساعدك الذكي للمحادثة`;
-  }, [assistantName]);
+    document.title = t('app.title', { name: assistantName });
+  }, [assistantName, t]);
 
   // Sync theme to <html class="dark"> and localStorage
   useEffect(() => {
@@ -377,7 +381,7 @@ export default function App() {
 
       try {
         if (typeof navigator !== 'undefined' && !navigator.onLine) {
-          throw mapErrorToArabic(new Error('offline'), false);
+          throw mapError(new Error('offline'), false, lang, assistantName);
         }
 
         const payloadMessages = historyToSend.map((m) => ({
@@ -405,6 +409,7 @@ export default function App() {
             modelId: selectedModel.id,
             thinkingLevel: thinkingLevelToUse,
             assistantName,
+            uiLanguage: lang,
           }),
           signal: controller.signal,
         });
@@ -416,6 +421,8 @@ export default function App() {
             const errJson = (await response.json()) as {
               code?: string;
               message?: string;
+              retryAfterSeconds?: number;
+              modelName?: string;
               fallbackThinkingLevel?: ThinkingOption;
             };
             if (response.status === 401 && errJson.code === 'API_KEY_MISSING') {
@@ -424,7 +431,9 @@ export default function App() {
             throw {
               code: errJson.code || `HTTP_${response.status}`,
               status: response.status,
-              message: errJson.message || `خطأ في الخادم (${response.status})`,
+              retryAfterSeconds: errJson.retryAfterSeconds,
+              modelName: errJson.modelName,
+              message: errJson.message,
               fallbackThinkingLevel: errJson.fallbackThinkingLevel,
             };
           }
@@ -434,12 +443,11 @@ export default function App() {
           throw {
             code: `HTTP_${response.status}`,
             status: response.status,
-            message: `خطأ في الخادم (رمز الخطأ: ${response.status})`,
           };
         }
 
         if (!response.body) {
-          throw new Error('لم يتم فتح قناة البث من الخادم.');
+          throw { code: 'STREAM_UNAVAILABLE' };
         }
 
         const reader = response.body.getReader();
@@ -515,6 +523,8 @@ export default function App() {
               throw {
                 code: event.code,
                 status: event.status,
+                retryAfterSeconds: event.retryAfterSeconds,
+                modelName: event.modelName,
                 message: event.message,
                 fallbackThinkingLevel: event.fallbackThinkingLevel,
               };
@@ -525,7 +535,6 @@ export default function App() {
         if (accumulatedText.trim().length === 0) {
           throw {
             code: 'EMPTY_RESPONSE',
-            message: `لم يصل رد من ${assistantName}. يرجى الضغط على "إعادة المحاولة".`,
           };
         }
 
@@ -548,9 +557,10 @@ export default function App() {
             })
           );
         } else {
-          const mapped = mapErrorToArabic(
+          const mapped = mapError(
             err,
             typeof navigator === 'undefined' ? true : navigator.onLine,
+            lang,
             assistantName
           );
 
@@ -596,7 +606,7 @@ export default function App() {
         setStreamingMessageId(null);
       }
     },
-    [activeApiKey?.key, assistantName, stopGeneration]
+    [activeApiKey?.key, assistantName, lang, stopGeneration]
   );
 
   const sendMessage = useCallback(
@@ -622,8 +632,9 @@ export default function App() {
 
       if (!targetConversationId) {
         const newConv = createConversation(
-          generateConversationTitle(textToSend, imagesToSend.length > 0),
-          now
+          generateConversationTitle(textToSend, imagesToSend.length > 0, lang),
+          now,
+          lang
         );
         newConv.messages = [userMessage];
         newConv.modelId = currentModelId;
@@ -637,7 +648,7 @@ export default function App() {
         const existing = activeConversation!;
         const isFirstMessage = existing.messages.length === 0;
         const updatedTitle = isFirstMessage
-          ? generateConversationTitle(textToSend, imagesToSend.length > 0)
+          ? generateConversationTitle(textToSend, imagesToSend.length > 0, lang)
           : existing.title;
         nextHistory = [...existing.messages, userMessage];
 
@@ -676,6 +687,7 @@ export default function App() {
       currentThinkingLevel,
       inputText,
       isStreaming,
+      lang,
       pendingImages,
       streamAssistantReply,
     ]
@@ -815,7 +827,7 @@ export default function App() {
 
   const handleAddFiles = useCallback(
     async (files: FileList | File[]) => {
-      const result = await processImageFiles(files, pendingImages.length);
+      const result = await processImageFiles(files, pendingImages.length, lang);
       if (result.added.length > 0) {
         setPendingImages((prev) => [...prev, ...result.added]);
       }
@@ -825,7 +837,7 @@ export default function App() {
         setUploadNotice(null);
       }
     },
-    [pendingImages.length]
+    [lang, pendingImages.length]
   );
 
   const handleRemoveImage = useCallback((id: string) => {
@@ -912,25 +924,25 @@ export default function App() {
   const handleOnboardingSaveKey = useCallback(
     (rawKey: string, optionalName?: string) => {
       setApiKeyStore((prev) => {
-        const res = addApiKeyToStore(prev, rawKey, optionalName, true);
+        const res = addApiKeyToStore(prev, rawKey, optionalName, true, Date.now(), lang);
         return res ? res.store : prev;
       });
       setForceOnboarding(false);
       setChatError(null);
     },
-    []
+    [lang]
   );
 
   const handleAddKey = useCallback(
     (rawKey: string, optionalName?: string, activate = true) => {
       setApiKeyStore((prev) => {
-        const res = addApiKeyToStore(prev, rawKey, optionalName, activate);
+        const res = addApiKeyToStore(prev, rawKey, optionalName, activate, Date.now(), lang);
         return res ? res.store : prev;
       });
       setForceOnboarding(false);
       setChatError(null);
     },
-    []
+    [lang]
   );
 
   const handleActivateKey = useCallback((id: string) => {
@@ -1036,7 +1048,7 @@ export default function App() {
       <ApiKeyOnboardingScreen
         theme={theme}
         onToggleTheme={toggleTheme}
-        defaultKeyName={getNextDefaultKeyName(apiKeyStore.keys)}
+        defaultKeyName={getNextDefaultKeyName(apiKeyStore.keys, lang)}
         currentModelId={currentModelId}
         onSaveKey={handleOnboardingSaveKey}
       />
@@ -1071,10 +1083,10 @@ export default function App() {
             <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-teal-600 dark:border-teal-400 bg-white/95 dark:bg-[#141A24]/95 px-10 py-8 shadow-xl">
               <ImagePlus className="w-10 h-10 text-teal-700 dark:text-teal-400" />
               <p className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                أفلت الصور هنا لإرفاقها بالرسالة
+                {t('app.dragDropTitle')}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                يدعم PNG و JPG و WebP و GIF حتى 6 صور مع ضغط تلقائي
+                {t('app.dragDropHint')}
               </p>
             </div>
           </div>
@@ -1087,17 +1099,21 @@ export default function App() {
               type="button"
               onClick={() => setSidebarOpen((prev) => !prev)}
               aria-label={
-                sidebarOpen ? 'إخفاء الشريط الجانبي' : 'إظهار الشريط الجانبي'
+                sidebarOpen ? t('app.hideSidebar') : t('app.showSidebar')
               }
-              title={
-                sidebarOpen ? 'إخفاء الشريط الجانبي' : 'إظهار الشريط الجانبي'
-              }
+              title={sidebarOpen ? t('app.hideSidebar') : t('app.showSidebar')}
               className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
             >
-              {sidebarOpen ? (
-                <PanelRightClose className="w-5 h-5" />
+              {dir === 'rtl' ? (
+                sidebarOpen ? (
+                  <PanelRightClose className="w-5 h-5" />
+                ) : (
+                  <PanelRightOpen className="w-5 h-5" />
+                )
+              ) : sidebarOpen ? (
+                <PanelLeftClose className="w-5 h-5" />
               ) : (
-                <PanelRightOpen className="w-5 h-5" />
+                <PanelLeftOpen className="w-5 h-5" />
               )}
             </button>
 
@@ -1122,8 +1138,8 @@ export default function App() {
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              aria-label="الإعدادات"
-              title="الإعدادات ومفاتيح API"
+              aria-label={t('app.settingsAria')}
+              title={t('app.settingsTitle')}
               className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
             >
               <Settings className="w-4 h-4" />
@@ -1134,21 +1150,21 @@ export default function App() {
               onClick={toggleTheme}
               aria-label={
                 theme === 'dark'
-                  ? 'التبديل إلى الوضع الفاتح'
-                  : 'التبديل إلى الوضع الداكن'
+                  ? t('app.switchToLight')
+                  : t('app.switchToDark')
               }
-              title={theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
+              title={theme === 'dark' ? t('app.lightMode') : t('app.darkMode')}
               className="inline-flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] px-2.5 sm:px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
             >
               {theme === 'dark' ? (
                 <>
                   <Sun className="w-4 h-4 text-amber-400" />
-                  <span className="hidden sm:inline">الوضع الفاتح</span>
+                  <span className="hidden sm:inline">{t('app.lightMode')}</span>
                 </>
               ) : (
                 <>
                   <Moon className="w-4 h-4 text-slate-600" />
-                  <span className="hidden sm:inline">الوضع الداكن</span>
+                  <span className="hidden sm:inline">{t('app.darkMode')}</span>
                 </>
               )}
             </button>
@@ -1195,7 +1211,7 @@ export default function App() {
                 shouldAutoScrollRef.current = true;
                 scrollToBottom('smooth');
               }}
-              aria-label="الانتقال إلى أحدث رسالة"
+              aria-label={t('app.scrollToBottom')}
               className="pointer-events-auto inline-flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-[#1B222E] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <ArrowDown className="w-4 h-4" />

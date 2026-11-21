@@ -3,6 +3,7 @@ import { Brain, Check, ChevronDown, Copy, RotateCw } from 'lucide-react';
 import type { ChatMessage, ImageAttachment } from '../types/chat';
 import { detectTextDirection } from '../utils/direction';
 import { useAssistantName } from '../hooks/useAssistantName';
+import { useLanguage } from '../hooks/useLanguage';
 import { BrandLogo } from './BrandLogo';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -20,6 +21,7 @@ export function MessageBubble({
   onPreviewImage,
 }: MessageBubbleProps) {
   const [assistantName] = useAssistantName();
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [thoughtOpen, setThoughtOpen] = useState(false);
 
@@ -53,9 +55,12 @@ export function MessageBubble({
 
   if (isUser) {
     return (
-      <article aria-label="رسالة المستخدم" className="flex justify-end w-full">
+      <article
+        aria-label={t('message.userMessageAria')}
+        className="flex justify-end w-full"
+      >
         <div className="max-w-[88%] sm:max-w-[78%] flex flex-col items-end gap-2">
-          <div className="rounded-2xl rounded-tl-md bg-teal-50/90 dark:bg-[#192430] border border-teal-200/70 dark:border-teal-800/50 px-4 py-3 text-slate-900 dark:text-slate-100">
+          <div className="rounded-2xl rounded-se-md bg-teal-50/90 dark:bg-[#192430] border border-teal-200/70 dark:border-teal-800/50 px-4 py-3 text-slate-900 dark:text-slate-100">
             {message.images && message.images.length > 0 && (
               <div
                 className={`grid gap-2 ${message.text ? 'mb-2.5' : ''} ${
@@ -71,7 +76,7 @@ export function MessageBubble({
                     key={img.id}
                     type="button"
                     onClick={() => onPreviewImage(img)}
-                    aria-label={`عرض الصورة ${img.name}`}
+                    aria-label={t('message.viewImageAria', { name: img.name })}
                     className="group relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
                   >
                     <img
@@ -101,7 +106,7 @@ export function MessageBubble({
 
   return (
     <article
-      aria-label={`رد ${assistantName}`}
+      aria-label={t('message.assistantReplyAria', { name: assistantName })}
       className="flex items-start gap-3 sm:gap-4 w-full"
     >
       <BrandLogo size="sm" className="mt-0.5" />
@@ -113,7 +118,7 @@ export function MessageBubble({
           </span>
           {message.stopped && !isStreaming && (
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              · تم إيقاف التوليد
+              {t('message.stoppedGeneration')}
             </span>
           )}
         </div>
@@ -130,7 +135,9 @@ export function MessageBubble({
               <span className="inline-flex items-center gap-2">
                 <Brain className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
                 <span>
-                  {isActivelyThinking ? 'عرض التفكير (جارٍ التفكير...)' : 'عرض التفكير'}
+                  {isActivelyThinking
+                    ? t('message.showThinkingActive')
+                    : t('message.showThinking')}
                 </span>
               </span>
               <ChevronDown
@@ -151,7 +158,7 @@ export function MessageBubble({
           </div>
         )}
 
-        <div className="rounded-2xl rounded-tr-md bg-white dark:bg-[#131720] border border-slate-200/75 dark:border-slate-800/90 px-4 py-3.5 sm:px-5 sm:py-4">
+        <div className="rounded-2xl rounded-ss-md bg-white dark:bg-[#131720] border border-slate-200/75 dark:border-slate-800/90 px-4 py-3.5 sm:px-5 sm:py-4">
           {isWaitingForFirstToken ? (
             <div
               role="status"
@@ -160,8 +167,8 @@ export function MessageBubble({
             >
               <span>
                 {isActivelyThinking
-                  ? `${assistantName} يفكر`
-                  : `${assistantName} يكتب`}
+                  ? t('message.thinking', { name: assistantName })
+                  : t('message.typing', { name: assistantName })}
               </span>
               <span
                 className="inline-flex items-center gap-1"
@@ -191,18 +198,18 @@ export function MessageBubble({
               <button
                 type="button"
                 onClick={handleCopyMessage}
-                aria-label={`نسخ رد ${assistantName}`}
+                aria-label={t('message.copyReplyAria', { name: assistantName })}
                 className="inline-flex items-center gap-1.5 min-h-[34px] px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
               >
                 {copied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>تم النسخ</span>
+                    <span>{t('message.copied')}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>نسخ</span>
+                    <span>{t('message.copy')}</span>
                   </>
                 )}
               </button>
@@ -211,11 +218,11 @@ export function MessageBubble({
                 <button
                   type="button"
                   onClick={() => onRegenerate(message.id)}
-                  aria-label="إعادة توليد الرد"
+                  aria-label={t('message.regenerateAria')}
                   className="inline-flex items-center gap-1.5 min-h-[34px] px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
-                  <span>إعادة التوليد</span>
+                  <span>{t('message.regenerate')}</span>
                 </button>
               )}
             </div>

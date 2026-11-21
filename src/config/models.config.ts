@@ -28,16 +28,16 @@ export interface GeminiThinkingPayload {
 }
 
 export const THINKING_LABELS: Record<ThinkingOption, string> = {
-  none: 'بدون',
-  auto: 'تلقائي',
-  low: 'منخفض',
-  medium: 'متوسط',
-  high: 'عالٍ',
+  none: 'models.thinkingLabels.none',
+  auto: 'models.thinkingLabels.auto',
+  low: 'models.thinkingLabels.low',
+  medium: 'models.thinkingLabels.medium',
+  high: 'models.thinkingLabels.high',
 };
 
 /**
- * قائمة النماذج المتاحة في عبودي AI — ملف الإعداد المركزي الوحيد.
- * لإضافة نموذج جديد، أضف عنصراً هنا فقط وسيظهر تلقائياً في الواجهة والخادم.
+ * قائمة النماذج المتاحة — ملف الإعداد المركزي الوحيد.
+ * لإضافة نموذج جديد، أضف عنصراً هنا مع مفاتيح الترجمة الخاصة به وسيظهر تلقائياً في الواجهة والخادم.
  *
  * ملاحظة حول معلمات التفكير وفق وثائق Gemini API:
  * - نماذج الجيل الأحدث (Gemini 3 / Gemini 4) تستخدم `thinkingLevel`.
@@ -48,8 +48,8 @@ export const MODELS: ModelDefinition[] = [
     id: 'gemini-4-hydrogen',
     name: 'Gemini Flash',
     family: 'flash',
-    shortTag: 'سريع ومتوازن',
-    description: 'الخيار الافتراضي الممتاز للمحادثة اليومية، البرمجة، وتحليل الصور بسرعة عالية.',
+    shortTag: 'models.gemini4Hydrogen.shortTag',
+    description: 'models.gemini4Hydrogen.description',
     supportsMultimodal: true,
     thinking: {
       mode: 'level',
@@ -62,8 +62,8 @@ export const MODELS: ModelDefinition[] = [
     id: 'gemini-3.1-flash-lite',
     name: 'Gemini Flash-Lite',
     family: 'flash-lite',
-    shortTag: 'فائق السرعة',
-    description: 'خفيف واستجابته فورية للأسئلة السريعة والترجمة والملخصات مع خيار إيقاف التفكير.',
+    shortTag: 'models.gemini31FlashLite.shortTag',
+    description: 'models.gemini31FlashLite.description',
     supportsMultimodal: true,
     thinking: {
       mode: 'level',
@@ -76,8 +76,8 @@ export const MODELS: ModelDefinition[] = [
     id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     family: 'flash',
-    shortTag: 'مرن بالتفكير',
-    description: 'نموذج Flash مستقر يدعم التحكم بميزانية التفكير (من الإيقاف الكامل حتى العميق).',
+    shortTag: 'models.gemini25Flash.shortTag',
+    description: 'models.gemini25Flash.description',
     supportsMultimodal: true,
     thinking: {
       mode: 'budget',
@@ -97,8 +97,8 @@ export const MODELS: ModelDefinition[] = [
     id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     family: 'pro',
-    shortTag: 'الأذكى للتحليل',
-    description: 'أقوى دقة للاستدلال المعقد، البرمجة المتقدمة، والرياضيات وتحليل الصور التفصيلي.',
+    shortTag: 'models.gemini25Pro.shortTag',
+    description: 'models.gemini25Pro.description',
     supportsMultimodal: true,
     thinking: {
       mode: 'budget',

@@ -1,5 +1,8 @@
 import { createId } from './conversations';
+import { localizeKeyValidationResult } from './keyValidation';
 import type { KeyValidationResponse } from './keyValidation';
+import { DEFAULT_LANGUAGE, t } from '../i18n';
+import type { Language } from '../i18n';
 
 export const API_KEYS_STORAGE_KEY = 'aboodi_ai_api_keys_v1';
 
@@ -42,15 +45,18 @@ export function maskApiKey(key: string): string {
 }
 
 /**
- * Generates the next available sequential Arabic name ("مفتاح 1", "مفتاح 2", ...).
+ * Generates the next available sequential default key name in the active UI language.
  */
-export function getNextDefaultKeyName(existing: ApiKeyEntry[]): string {
+export function getNextDefaultKeyName(
+  existing: ApiKeyEntry[],
+  lang: Language = DEFAULT_LANGUAGE
+): string {
   const usedNames = new Set(existing.map((k) => k.name.trim()));
   let index = 1;
-  while (usedNames.has(`مفتاح ${index}`)) {
+  while (usedNames.has(t(lang, 'apiKeys.defaultKeyName', { index }))) {
     index += 1;
   }
-  return `مفتاح ${index}`;
+  return t(lang, 'apiKeys.defaultKeyName', { index });
 }
 
 export function createEmptyApiKeyStore(): ApiKeyStore {
@@ -62,13 +68,14 @@ export function addApiKeyToStore(
   rawKey: string,
   optionalName?: string,
   activate = true,
-  now = Date.now()
+  now = Date.now(),
+  lang: Language = DEFAULT_LANGUAGE
 ): { store: ApiKeyStore; entry: ApiKeyEntry } | null {
   const cleanKey = sanitizeApiKey(rawKey);
   if (!cleanKey) return null;
 
   const trimmedName = optionalName?.trim();
-  const name = trimmedName || getNextDefaultKeyName(store.keys);
+  const name = trimmedName || getNextDefaultKeyName(store.keys, lang);
 
   const entry: ApiKeyEntry = {
     id: createId('key'),
@@ -181,30 +188,36 @@ export function saveApiKeyStore(store: ApiKeyStore): void {
 
 export async function validateApiKeyWithServer(
   rawKey: string,
-  modelId?: string
+  modelId?: string,
+  lang: Language = DEFAULT_LANGUAGE
 ): Promise<KeyValidationResult> {
   const cleanKey = sanitizeApiKey(rawKey);
   if (!cleanKey) {
-    return {
-      valid: false,
-      outcome: 'invalid_key',
-      allowSave: false,
-      status: 400,
-      code: 'EMPTY_KEY',
-      message: 'يرجى إدخال مفتاح API أولاً.',
-    };
+    return localizeKeyValidationResult(
+      {
+        valid: false,
+        outcome: 'invalid_key',
+        allowSave: false,
+        status: 400,
+        code: 'EMPTY_KEY',
+        message: t('ar', 'keyValidation.EMPTY_KEY'),
+      },
+      lang
+    );
   }
 
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    return {
-      valid: false,
-      outcome: 'unverified',
-      allowSave: true,
-      status: null,
-      code: 'OFFLINE',
-      message:
-        'تعذّر التحقق الآن لعدم وجود اتصال بالإنترنت (رمز الخطأ: OFFLINE). يمكنك حفظ المفتاح والمتابعة.',
-    };
+    return localizeKeyValidationResult(
+      {
+        valid: false,
+        outcome: 'unverified',
+        allowSave: true,
+        status: null,
+        code: 'OFFLINE',
+        message: t('ar', 'keyValidation.OFFLINE'),
+      },
+      lang
+    );
   }
 
   const controller = new AbortController();
@@ -243,50 +256,61 @@ export async function validateApiKeyWithServer(
             ? null
             : response.status;
 
-      return {
-        valid: data.valid,
-        outcome,
-        allowSave,
-        status,
-        code: data.code || (data.valid ? 'VALID' : `HTTP_${status ?? response.status}`),
-        message:
-          data.message ||
-          (data.valid
-            ? 'المفتاح صالح وجاهز للاستخدام.'
-            : `تعذّر التحقق الآن (رمز الخطأ: ${status ?? response.status}). يمكنك حفظ المفتاح والمتابعة.`),
-      };
+      return localizeKeyValidationResult(
+        {
+          valid: data.valid,
+          outcome,
+          allowSave,
+          status,
+          retryAfterSeconds:
+            typeof data.retryAfterSeconds === 'number'
+              ? data.retryAfterSeconds
+              : undefined,
+          code:
+            data.code || (data.valid ? 'VALID' : `HTTP_${status ?? response.status}`),
+          message: data.message || '',
+        },
+        lang
+      );
     }
 
-    return {
-      valid: false,
-      outcome: 'unverified',
-      allowSave: true,
-      status: response.status,
-      code: `HTTP_${response.status}`,
-      message: `تعذّر التحقق الآن (رمز الخطأ: ${response.status}). يمكنك حفظ المفتاح والمتابعة.`,
-    };
-  } catch (err) {
-    const isTimeout = err instanceof DOMException && err.name === 'AbortError';
-    if (isTimeout) {
-      return {
+    return localizeKeyValidationResult(
+      {
         valid: false,
         outcome: 'unverified',
         allowSave: true,
-        status: 408,
-        code: 'TIMEOUT',
-        message:
-          'تعذّر التحقق الآن بسبب انتهاء مهلة الاتصال (رمز الخطأ: 408). يمكنك حفظ المفتاح والمتابعة.',
-      };
+        status: response.status,
+        code: `HTTP_${response.status}`,
+        message: '',
+      },
+      lang
+    );
+  } catch (err) {
+    const isTimeout = err instanceof DOMException && err.name === 'AbortError';
+    if (isTimeout) {
+      return localizeKeyValidationResult(
+        {
+          valid: false,
+          outcome: 'unverified',
+          allowSave: true,
+          status: 408,
+          code: 'TIMEOUT',
+          message: '',
+        },
+        lang
+      );
     }
-    return {
-      valid: false,
-      outcome: 'unverified',
-      allowSave: true,
-      status: null,
-      code: 'NETWORK_ERROR',
-      message:
-        'تعذّر التحقق الآن بسبب مشكلة في الشبكة (رمز الخطأ: NETWORK). يمكنك حفظ المفتاح والمتابعة.',
-    };
+    return localizeKeyValidationResult(
+      {
+        valid: false,
+        outcome: 'unverified',
+        allowSave: true,
+        status: null,
+        code: 'NETWORK_ERROR',
+        message: '',
+      },
+      lang
+    );
   } finally {
     if (timeoutId !== null && typeof window !== 'undefined') {
       window.clearTimeout(timeoutId);

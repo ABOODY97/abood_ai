@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { ImageAttachment } from '../types/chat';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface ImageLightboxProps {
   image: ImageAttachment | null;
@@ -8,6 +9,8 @@ interface ImageLightboxProps {
 }
 
 export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
+  const { t } = useLanguage();
+
   useEffect(() => {
     if (!image) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -23,7 +26,7 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`معاينة الصورة ${image.name}`}
+      aria-label={t('lightbox.previewAria', { name: image.name })}
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4"
       onClick={onClose}
     >
@@ -34,7 +37,7 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="إغلاق معاينة الصورة"
+          aria-label={t('lightbox.closeAria')}
           className="self-end inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-900/90 text-white hover:bg-slate-800 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
         >
           <X className="w-5 h-5" />

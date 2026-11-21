@@ -29,14 +29,36 @@ import { sanitizeAssistantName } from './src/utils/assistantName.ts';
 // ============================================================================
 export const MODEL_NAME = DEFAULT_MODEL_ID;
 
-function buildSystemInstruction(assistantName: unknown): string {
+type SupportedUiLanguage = 'ar' | 'en' | 'tr';
+
+function parseUiLanguage(raw: unknown): SupportedUiLanguage | undefined {
+  if (raw === 'ar' || raw === 'en' || raw === 'tr') {
+    return raw;
+  }
+  return undefined;
+}
+
+const UI_LANGUAGE_NAMES: Record<SupportedUiLanguage, string> = {
+  ar: 'العربية (Arabic)',
+  en: 'الإنجليزية (English)',
+  tr: 'التركية (Turkish)',
+};
+
+function buildSystemInstruction(
+  assistantName: unknown,
+  uiLanguage?: SupportedUiLanguage
+): string {
   const safeName = sanitizeAssistantName(assistantName);
+  const languageRule = uiLanguage
+    ? `3. ردّ دائماً بنفس لغة رسالة المستخدم (العربية، الإنجليزية، التركية، أو أي لغة أخرى يكتب بها). لا تُجبر المستخدم أبداً على لغة الواجهة إذا كتب بلغة أخرى؛ وفقط إذا كانت الرسالة قصيرة جداً أو غامضة اللغة (مثل أرقام أو رموز أو صورة بلا نص واضح) فاستخدم لغة الواجهة المختارة وهي ${UI_LANGUAGE_NAMES[uiLanguage]}.`
+    : '3. ردّ تلقائياً بنفس لغة رسالة المستخدم (العربية، التركية، الإنجليزية، أو أي لغة أخرى يكتب بها المستخدم).';
+
   return `أنت "${safeName}"، مساعد ذكاء اصطناعي ودود، ذكي، واضح، ومفيد في جميع المواضيع (البرمجة، العلوم، الكتابة، الترجمة، التحليل، الحياة اليومية، وفهم الصور).
 
 القواعد الأساسية لشخصيتك:
 1. قدّم نفسك دائماً باسم "${safeName}" عند الترحيب أو عند السؤال عن اسمك أو هويتك.
 2. لا تذكر اسم Gemini أو Google نهائياً في ردودك إلا إذا سألك المستخدم مباشرة وبشكل صريح عن النموذج أو التقنية المستخدمة خلفك.
-3. ردّ تلقائياً بنفس لغة المستخدم (العربية، التركية، الإنجليزية، أو أي لغة أخرى يكتب بها المستخدم).
+${languageRule}
 4. اجعل إجاباتك منظمة وسهلة القراءة باستخدام تنسيق Markdown (عناوين، نقاط، جداول، وأكواد منسقة مع تحديد لغة البرمجة) متى كان ذلك مناسباً.
 5. كن دقيقاً وصادقاً، وإذا أرفق المستخدم صورة أو عدة صور، حلّلها بعمق وأجب على طلبه بدقة.`;
 }
@@ -76,6 +98,7 @@ interface ChatRequestBody {
   modelId?: string;
   thinkingLevel?: ThinkingOption;
   assistantName?: string;
+  uiLanguage?: string;
 }
 
 const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'GEMINI_API_KEY', 'key']);
@@ -203,6 +226,7 @@ function classifyGeminiError(
   status: number;
   code: string;
   message: string;
+  modelName?: string;
   fallbackThinkingLevel?: ThinkingOption;
 } {
   const rawMessage =
@@ -226,6 +250,7 @@ function classifyGeminiError(
     return {
       status: 400,
       code: 'THINKING_CONFIG_UNSUPPORTED',
+      modelName: model.name,
       message: `النموذج (${model.name}) لا يدعم مستوى التفكير المحدد حالياً (رمز الخطأ: 400). تم الرجوع تلقائياً إلى الإعداد المدعوم — اضغط "إعادة المحاولة".`,
       fallbackThinkingLevel: model.thinking.defaultLevel,
     };
@@ -267,6 +292,7 @@ function classifyGeminiError(
     return {
       status: 404,
       code: 'MODEL_NOT_FOUND',
+      modelName: model?.name,
       message: model
         ? `النموذج المحدد (${model.name}) غير متاح حالياً لهذا المفتاح (رمز الخطأ: 404). جرّب اختيار نموذج آخر من القائمة.`
         : 'النموذج المطلوب غير متاح حالياً لهذا المفتاح (رمز الخطأ: 404).',
@@ -473,6 +499,7 @@ async function startServer() {
         allowSave: true,
         status: 429,
         code: 'RATE_LIMIT',
+        retryAfterSeconds: limitResult.retryAfterSeconds,
         message: `تعذّر التحقق الآن بسبب كثرة المحاولات (رمز الخطأ: 429). انتظر ${limitResult.retryAfterSeconds} ثانية أو احفظ المفتاح والمتابعة.`,
       });
       return;
@@ -543,6 +570,8 @@ async function startServer() {
       res.setHeader('Retry-After', String(limitResult.retryAfterSeconds));
       res.status(429).json({
         code: 'RATE_LIMIT',
+        status: 429,
+        retryAfterSeconds: limitResult.retryAfterSeconds,
         message: `أرسلت عدداً كبيراً من الطلبات بسرعة. يرجى الانتظار ${limitResult.retryAfterSeconds} ثانية ثم المحاولة مجدداً.`,
       });
       return;
@@ -584,6 +613,7 @@ async function startServer() {
 
     const model = getModelById(body.modelId);
     const safeAssistantName = sanitizeAssistantName(body?.assistantName);
+    const safeUiLanguage = parseUiLanguage(body?.uiLanguage);
     const { thinkingConfig, resolvedLevel } = toSdkThinkingConfig(
       model,
       body.thinkingLevel
@@ -622,7 +652,10 @@ async function startServer() {
         model: model.id,
         contents,
         config: {
-          systemInstruction: buildSystemInstruction(safeAssistantName),
+          systemInstruction: buildSystemInstruction(
+            safeAssistantName,
+            safeUiLanguage
+          ),
           ...(thinkingConfig ? { thinkingConfig } : {}),
         },
       });
@@ -673,6 +706,7 @@ async function startServer() {
         type: 'error',
         code: classified.code,
         status: classified.status,
+        ...(classified.modelName ? { modelName: classified.modelName } : {}),
         message: classified.message,
         ...(classified.fallbackThinkingLevel
           ? { fallbackThinkingLevel: classified.fallbackThinkingLevel }

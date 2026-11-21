@@ -1,4 +1,6 @@
 import type { ChatMessage, Conversation } from '../types/chat';
+import { DEFAULT_LANGUAGE, t } from '../i18n';
+import type { Language } from '../i18n';
 
 export const STORAGE_KEY = 'aboodi_ai_conversations_v1';
 
@@ -9,14 +11,20 @@ export function createId(prefix = 'id'): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function generateConversationTitle(text: string, hasImages = false): string {
+export function generateConversationTitle(
+  text: string,
+  hasImages = false,
+  lang: Language = DEFAULT_LANGUAGE
+): string {
   const cleaned = text
     .replace(/\s+/g, ' ')
     .replace(/[#*_`~]/g, '')
     .trim();
 
   if (!cleaned) {
-    return hasImages ? 'تحليل صورة' : 'محادثة جديدة';
+    return hasImages
+      ? t(lang, 'conversations.imageAnalysisTitle')
+      : t(lang, 'conversations.defaultTitle');
   }
 
   if (cleaned.length <= 42) {
@@ -26,10 +34,14 @@ export function generateConversationTitle(text: string, hasImages = false): stri
   return `${cleaned.slice(0, 42).trim()}…`;
 }
 
-export function createConversation(initialTitle = 'محادثة جديدة', now = Date.now()): Conversation {
+export function createConversation(
+  initialTitle?: string,
+  now = Date.now(),
+  lang: Language = DEFAULT_LANGUAGE
+): Conversation {
   return {
     id: createId('conv'),
-    title: initialTitle,
+    title: initialTitle ?? t(lang, 'conversations.defaultTitle'),
     messages: [],
     createdAt: now,
     updatedAt: now,
@@ -76,14 +88,18 @@ export function sliceMessagesForRegenerate(
   return sliced;
 }
 
+export type DateGroupKey = 'today' | 'yesterday' | 'last7Days' | 'older';
+
 export interface ConversationGroup {
+  key: DateGroupKey;
   label: string;
   items: Conversation[];
 }
 
 export function groupConversationsByDate(
   conversations: Conversation[],
-  now = Date.now()
+  now = Date.now(),
+  lang: Language = DEFAULT_LANGUAGE
 ): ConversationGroup[] {
   const sorted = [...conversations].sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -111,10 +127,18 @@ export function groupConversationsByDate(
   }
 
   const groups: ConversationGroup[] = [];
-  if (today.length > 0) groups.push({ label: 'اليوم', items: today });
-  if (yesterday.length > 0) groups.push({ label: 'أمس', items: yesterday });
-  if (lastWeek.length > 0) groups.push({ label: 'آخر 7 أيام', items: lastWeek });
-  if (older.length > 0) groups.push({ label: 'سابقاً', items: older });
+  if (today.length > 0) {
+    groups.push({ key: 'today', label: t(lang, 'sidebar.dateGroups.today'), items: today });
+  }
+  if (yesterday.length > 0) {
+    groups.push({ key: 'yesterday', label: t(lang, 'sidebar.dateGroups.yesterday'), items: yesterday });
+  }
+  if (lastWeek.length > 0) {
+    groups.push({ key: 'last7Days', label: t(lang, 'sidebar.dateGroups.last7Days'), items: lastWeek });
+  }
+  if (older.length > 0) {
+    groups.push({ key: 'older', label: t(lang, 'sidebar.dateGroups.older'), items: older });
+  }
 
   return groups;
 }

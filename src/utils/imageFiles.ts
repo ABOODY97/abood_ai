@@ -1,5 +1,7 @@
 import type { ImageAttachment } from '../types/chat';
 import { createId } from './conversations';
+import { DEFAULT_LANGUAGE, t } from '../i18n';
+import type { Language } from '../i18n';
 
 export const MAX_IMAGES_PER_MESSAGE = 6;
 export const MAX_RAW_IMAGE_SIZE_BYTES = 15 * 1024 * 1024; // Accept up to 15MB from mobile cameras before compression
@@ -12,26 +14,27 @@ export interface ImageProcessResult {
   error: string | null;
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: File, lang: Language): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         resolve(reader.result);
       } else {
-        reject(new Error('تعذّرت قراءة ملف الصورة.'));
+        reject(new Error(t(lang, 'imageFiles.readFailed', { name: file.name })));
       }
     };
-    reader.onerror = () => reject(new Error('تعذّرت قراءة ملف الصورة.'));
+    reader.onerror = () =>
+      reject(new Error(t(lang, 'imageFiles.readFailed', { name: file.name })));
     reader.readAsDataURL(file);
   });
 }
 
-function loadImageElement(src: string): Promise<HTMLImageElement> {
+function loadImageElement(src: string, lang: Language): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('تعذّر تحميل الصورة للضغط.'));
+    img.onerror = () => reject(new Error(t(lang, 'imageFiles.compressFailed')));
     img.src = src;
   });
 }
@@ -42,7 +45,8 @@ function loadImageElement(src: string): Promise<HTMLImageElement> {
  */
 async function compressImageIfNeeded(
   file: File,
-  originalDataUrl: string
+  originalDataUrl: string,
+  lang: Language
 ): Promise<{ dataUrl: string; mimeType: string; size: number }> {
   // Keep animated GIFs and already small files untouched
   if (
@@ -58,7 +62,7 @@ async function compressImageIfNeeded(
   }
 
   try {
-    const img = await loadImageElement(originalDataUrl);
+    const img = await loadImageElement(originalDataUrl, lang);
     let { width, height } = img;
 
     if (width <= 0 || height <= 0) {
@@ -117,7 +121,8 @@ async function compressImageIfNeeded(
 
 export async function processImageFiles(
   files: FileList | File[],
-  existingCount: number
+  existingCount: number,
+  lang: Language = DEFAULT_LANGUAGE
 ): Promise<ImageProcessResult> {
   const fileArray = Array.from(files);
   const imageFiles = fileArray.filter((f) => f.type.startsWith('image/'));
@@ -125,7 +130,7 @@ export async function processImageFiles(
   if (imageFiles.length === 0) {
     return {
       added: [],
-      error: 'يرجى اختيار ملفات صور صالحة فقط (PNG، JPG، WebP، GIF).',
+      error: t(lang, 'imageFiles.invalidType'),
     };
   }
 
@@ -133,7 +138,9 @@ export async function processImageFiles(
   if (remainingSlots <= 0) {
     return {
       added: [],
-      error: `يمكنك إرفاق ما يصل إلى ${MAX_IMAGES_PER_MESSAGE} صور في الرسالة الواحدة.`,
+      error: t(lang, 'imageFiles.maxImagesReached', {
+        max: MAX_IMAGES_PER_MESSAGE,
+      }),
     };
   }
 
@@ -141,34 +148,38 @@ export async function processImageFiles(
   const added: ImageAttachment[] = [];
   let warning: string | null =
     imageFiles.length > remainingSlots
-      ? `تمت إضافة أول ${remainingSlots} صور فقط (الحد الأقصى ${MAX_IMAGES_PER_MESSAGE} صور في الرسالة).`
+      ? t(lang, 'imageFiles.partialAdded', {
+          count: remainingSlots,
+          max: MAX_IMAGES_PER_MESSAGE,
+        })
       : null;
 
   for (const file of toProcess) {
     if (file.size > MAX_RAW_IMAGE_SIZE_BYTES) {
-      warning = `الصورة "${file.name}" كبيرة جداً (الحد الأقصى 15 ميجابايت قبل الضغط).`;
+      warning = t(lang, 'imageFiles.fileTooLarge', { name: file.name });
       continue;
     }
 
     try {
-      const originalDataUrl = await readFileAsDataUrl(file);
+      const originalDataUrl = await readFileAsDataUrl(file, lang);
       const { dataUrl, mimeType, size } = await compressImageIfNeeded(
         file,
-        originalDataUrl
+        originalDataUrl,
+        lang
       );
       const commaIndex = dataUrl.indexOf(',');
       const data = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
 
       added.push({
         id: createId('img'),
-        name: file.name || 'صورة مرفقة',
+        name: file.name || t(lang, 'imageFiles.defaultImageName'),
         mimeType,
         data,
         previewUrl: dataUrl,
         size,
       });
     } catch {
-      warning = `تعذّرت قراءة الصورة "${file.name}".`;
+      warning = t(lang, 'imageFiles.readFailed', { name: file.name });
     }
   }
 

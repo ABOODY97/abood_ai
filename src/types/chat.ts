@@ -42,5 +42,7 @@ export interface ChatError {
   code: string;
   message: string;
   status?: number;
+  retryAfterSeconds?: number;
+  modelName?: string;
   fallbackThinkingLevel?: ThinkingOption;
 }

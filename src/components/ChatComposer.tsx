@@ -4,6 +4,7 @@ import { ArrowUp, Paperclip, Square, X } from 'lucide-react';
 import type { ImageAttachment } from '../types/chat';
 import { detectTextDirection } from '../utils/direction';
 import { useAssistantName } from '../hooks/useAssistantName';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface ChatComposerProps {
   value: string;
@@ -31,10 +32,11 @@ export function ChatComposer({
   onClearUploadNotice,
 }: ChatComposerProps) {
   const [assistantName] = useAssistantName();
+  const { t, dir } = useLanguage();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const inputDir = detectTextDirection(value);
+  const inputDir = value.trim() ? detectTextDirection(value) : dir;
   const canSend = !isStreaming && (value.trim().length > 0 || images.length > 0);
 
   // Auto-resize textarea up to 180px
@@ -83,7 +85,7 @@ export function ChatComposer({
           <button
             type="button"
             onClick={onClearUploadNotice}
-            aria-label="إغلاق التنبيه"
+            aria-label={t('composer.closeNotice')}
             className="p-1 rounded-md hover:bg-amber-200/50 dark:hover:bg-amber-900/40 cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
@@ -94,7 +96,7 @@ export function ChatComposer({
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#151A24] shadow-sm focus-within:border-teal-600/70 dark:focus-within:border-teal-500/70 transition-colors">
         {images.length > 0 && (
           <div
-            aria-label="الصور المرفقة قبل الإرسال"
+            aria-label={t('composer.attachedImagesAria')}
             className="flex flex-wrap items-center gap-2.5 px-3.5 pt-3 pb-1"
           >
             {images.map((img) => (
@@ -111,7 +113,7 @@ export function ChatComposer({
                 <button
                   type="button"
                   onClick={() => onRemoveImage(img.id)}
-                  aria-label={`إزالة الصورة ${img.name}`}
+                  aria-label={t('composer.removeImageAria', { name: img.name })}
                   className="absolute top-1 end-1 w-5 h-5 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
                 >
                   <X className="w-3 h-3" />
@@ -140,8 +142,8 @@ export function ChatComposer({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isStreaming}
-            aria-label="إرفاق صور"
-            title="إرفاق صور من المعرض أو الكاميرا (أو السحب والإفلات / اللصق)"
+            aria-label={t('composer.attachImages')}
+            title={t('composer.attachImagesTitle')}
             className="inline-flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-40 transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
           >
             <Paperclip className="w-5 h-5" />
@@ -155,29 +157,31 @@ export function ChatComposer({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder={`اسأل ${assistantName} أي شيء...`}
-            aria-label="حقل كتابة الرسالة"
-            className="flex-1 resize-none bg-transparent border-0 py-2.5 sm:py-2 px-1 text-[16px] sm:text-[15.5px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none max-h-[180px] overflow-y-auto"
+            placeholder={t('composer.placeholder', { name: assistantName })}
+            aria-label={t('composer.inputAria')}
+            className="flex-1 resize-none bg-transparent border-0 py-2.5 sm:py-2 px-1 text-[16px] sm:text-[15.5px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none max-h-[180px] overflow-y-auto text-start"
           />
 
           {isStreaming ? (
             <button
               type="button"
               onClick={onStop}
-              aria-label="إيقاف التوليد"
-              title="إيقاف التوليد"
+              aria-label={t('composer.stopGeneration')}
+              title={t('composer.stopGeneration')}
               className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-10 px-3.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white text-xs font-semibold transition-colors shrink-0 whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
-              <span className="hidden sm:inline">إيقاف التوليد</span>
+              <span className="hidden sm:inline">
+                {t('composer.stopGeneration')}
+              </span>
             </button>
           ) : (
             <button
               type="button"
               onClick={onSend}
               disabled={!canSend}
-              aria-label="إرسال الرسالة"
-              title="إرسال (Enter)"
+              aria-label={t('composer.sendMessage')}
+              title={t('composer.sendTitle')}
               className="inline-flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 transition-colors shrink-0 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-teal-600"
             >
               <ArrowUp className="w-5 h-5" />
@@ -187,7 +191,7 @@ export function ChatComposer({
       </div>
 
       <p className="mt-2 text-center text-[11.5px] text-slate-400 dark:text-slate-500">
-        اضغط Enter للإرسال · Shift+Enter لسطر جديد · قد يخطئ الذكاء الاصطناعي أحياناً، تحقق من المعلومات المهمة.
+        {t('composer.footerHint')}
       </p>
     </div>
   );

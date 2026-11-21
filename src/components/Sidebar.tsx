@@ -10,6 +10,7 @@ import {
 import type { Conversation } from '../types/chat';
 import { groupConversationsByDate } from '../utils/conversations';
 import { useAssistantName } from '../hooks/useAssistantName';
+import { useLanguage } from '../hooks/useLanguage';
 import { BrandLogo } from './BrandLogo';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -35,14 +36,15 @@ export function Sidebar({
   onDeleteChat,
 }: SidebarProps) {
   const [assistantName] = useAssistantName();
+  const { lang, t, dir } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
 
   const grouped = useMemo(
-    () => groupConversationsByDate(conversations),
-    [conversations]
+    () => groupConversationsByDate(conversations, Date.now(), lang),
+    [conversations, lang]
   );
 
   useEffect(() => {
@@ -71,6 +73,11 @@ export function Sidebar({
     setDraftTitle('');
   };
 
+  const hiddenSlideClass =
+    dir === 'rtl'
+      ? 'translate-x-full lg:translate-x-0 lg:hidden'
+      : '-translate-x-full lg:translate-x-0 lg:hidden';
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -83,11 +90,9 @@ export function Sidebar({
       )}
 
       <aside
-        aria-label="سجل المحادثات"
+        aria-label={t('sidebar.ariaLabel')}
         className={`fixed lg:static inset-y-0 start-0 z-40 flex flex-col w-[276px] shrink-0 bg-[#F6F7F9] dark:bg-[#131720] border-e border-slate-200/90 dark:border-slate-800/90 transition-transform duration-200 ease-out ${
-          isOpen
-            ? 'translate-x-0'
-            : 'translate-x-full lg:translate-x-0 lg:hidden'
+          isOpen ? 'translate-x-0' : hiddenSlideClass
         }`}
       >
         {/* Sidebar Top Brand & New Chat */}
@@ -102,7 +107,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={onCloseMobile}
-              aria-label="إغلاق القائمة الجانبية"
+              aria-label={t('sidebar.closeSidebar')}
               className="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:bg-slate-200/70 dark:hover:bg-slate-800 cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -118,7 +123,7 @@ export function Sidebar({
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
           >
             <Plus className="w-4 h-4" />
-            <span>محادثة جديدة</span>
+            <span>{t('sidebar.newChat')}</span>
           </button>
         </div>
 
@@ -127,13 +132,13 @@ export function Sidebar({
           {grouped.length === 0 ? (
             <div className="px-3 py-8 text-center">
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                لا توجد محادثات سابقة بعد. ابدأ بسؤال جديد وسيتم حفظ محادثاتك تلقائياً هنا.
+                {t('sidebar.emptyHistory')}
               </p>
             </div>
           ) : (
             grouped.map((group) => (
-              <div key={group.label}>
-                <h2 className="px-2.5 mb-1.5 text-[11.5px] font-semibold text-slate-500 dark:text-slate-400">
+              <div key={group.key}>
+                <h2 className="px-2.5 mb-1.5 text-[11.5px] font-semibold text-slate-500 dark:text-slate-400 text-start">
                   {group.label}
                 </h2>
                 <ul className="space-y-1">
@@ -157,13 +162,13 @@ export function Sidebar({
                               if (e.key === 'Enter') commitRename();
                               if (e.key === 'Escape') cancelRename();
                             }}
-                            aria-label="اسم المحادثة الجديد"
+                            aria-label={t('sidebar.renameInputAria')}
                             className="flex-1 min-w-0 bg-transparent text-xs text-slate-900 dark:text-slate-100 focus:outline-none px-1"
                           />
                           <button
                             type="button"
                             onClick={commitRename}
-                            aria-label="حفظ الاسم الجديد"
+                            aria-label={t('sidebar.saveNewName')}
                             className="p-1.5 rounded-lg text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/60 cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
@@ -171,7 +176,7 @@ export function Sidebar({
                           <button
                             type="button"
                             onClick={cancelRename}
-                            aria-label="إلغاء إعادة التسمية"
+                            aria-label={t('sidebar.cancelRename')}
                             className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -187,7 +192,7 @@ export function Sidebar({
                           className="flex items-center justify-between gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/70 px-2.5 py-2"
                         >
                           <span className="text-xs font-medium text-rose-800 dark:text-rose-200 truncate">
-                            حذف هذه المحادثة؟
+                            {t('sidebar.deleteConfirm')}
                           </span>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
@@ -196,18 +201,20 @@ export function Sidebar({
                                 onDeleteChat(conv.id);
                                 setConfirmDeleteId(null);
                               }}
-                              aria-label={`تأكيد حذف المحادثة ${conv.title}`}
+                              aria-label={t('sidebar.confirmDeleteAria', {
+                                title: conv.title,
+                              })}
                               className="px-2 py-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold cursor-pointer"
                             >
-                              حذف
+                              {t('sidebar.delete')}
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteId(null)}
-                              aria-label="إلغاء الحذف"
+                              aria-label={t('sidebar.cancelDeleteAria')}
                               className="px-2 py-1 rounded-md text-slate-600 dark:text-slate-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-[11px] font-medium cursor-pointer"
                             >
-                              إلغاء
+                              {t('sidebar.cancel')}
                             </button>
                           </div>
                         </li>
@@ -247,8 +254,10 @@ export function Sidebar({
                           <button
                             type="button"
                             onClick={() => startRename(conv)}
-                            aria-label={`إعادة تسمية ${conv.title}`}
-                            title="إعادة تسمية"
+                            aria-label={t('sidebar.renameAria', {
+                              title: conv.title,
+                            })}
+                            title={t('sidebar.rename')}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-300/50 dark:hover:bg-slate-700/60 cursor-pointer"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -259,8 +268,10 @@ export function Sidebar({
                               setEditingId(null);
                               setConfirmDeleteId(conv.id);
                             }}
-                            aria-label={`حذف ${conv.title}`}
-                            title="حذف"
+                            aria-label={t('sidebar.deleteAria', {
+                              title: conv.title,
+                            })}
+                            title={t('sidebar.delete')}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-100/70 dark:hover:bg-rose-950/60 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

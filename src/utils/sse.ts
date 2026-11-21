@@ -9,6 +9,8 @@ export type SseChatEvent =
       type: 'error';
       code: string;
       status?: number;
+      retryAfterSeconds?: number;
+      modelName?: string;
       message: string;
       fallbackThinkingLevel?: ThinkingOption;
     };
@@ -69,6 +71,12 @@ export function parseSseBuffer(buffer: string): {
           code: typeof parsed.code === 'string' ? parsed.code : 'SERVER_ERROR',
           status:
             typeof parsed.status === 'number' ? parsed.status : undefined,
+          retryAfterSeconds:
+            typeof parsed.retryAfterSeconds === 'number'
+              ? parsed.retryAfterSeconds
+              : undefined,
+          modelName:
+            typeof parsed.modelName === 'string' ? parsed.modelName : undefined,
           message: parsed.message,
           fallbackThinkingLevel:
             typeof parsed.fallbackThinkingLevel === 'string'

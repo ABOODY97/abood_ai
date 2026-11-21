@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { WifiOff } from 'lucide-react';
+import { useLanguage } from '../hooks/useLanguage';
 
 export function OfflineBanner() {
+  const { t } = useLanguage();
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
@@ -28,7 +30,7 @@ export function OfflineBanner() {
       className="bg-amber-50 dark:bg-amber-950/60 border-b border-amber-200 dark:border-amber-900/70 px-4 py-2 text-xs font-medium text-amber-900 dark:text-amber-200 flex items-center justify-center gap-2"
     >
       <WifiOff className="w-3.5 h-3.5 shrink-0" />
-      <span>أنت غير متصل بالإنترنت حالياً — يمكنك تصفح محادثاتك المحفوظة فقط.</span>
+      <span>{t('offline.banner')}</span>
     </div>
   );
 }

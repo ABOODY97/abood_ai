@@ -8,6 +8,7 @@ import {
   resolveThinkingLevelForModel,
 } from '../config/models.config';
 import type { ThinkingOption } from '../config/models.config';
+import { useLanguage } from '../hooks/useLanguage';
 
 const FREE_KEY_TIP_DISMISSED_KEY = 'aboodi_ai_free_key_tip_dismissed_v1';
 const FLASH_LITE_MODEL_ID = 'gemini-3.1-flash-lite';
@@ -36,6 +37,7 @@ export function ModelThinkingPicker({
   onSelectModel,
   onSelectThinking,
 }: ModelThinkingPickerProps) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [freeTipDismissed, setFreeTipDismissed] = useState<boolean>(
     readFreeTipDismissed
@@ -101,16 +103,16 @@ export function ModelThinkingPicker({
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            اختر النموذج
+            {t('modelPicker.chooseModel')}
           </span>
           <span className="text-[11px] text-slate-400 dark:text-slate-500">
-            يدعم النصوص والصور
+            {t('modelPicker.supportsTextAndImages')}
           </span>
         </div>
 
         <div
           role="radiogroup"
-          aria-label="اختيار النموذج"
+          aria-label={t('modelPicker.modelSelectionAria')}
           className="space-y-1.5"
         >
           {MODELS.map((model) => {
@@ -140,11 +142,11 @@ export function ModelThinkingPicker({
                       ·
                     </span>
                     <span className="text-xs font-medium text-teal-700 dark:text-teal-400">
-                      {model.shortTag}
+                      {t(model.shortTag)}
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {model.description}
+                    {t(model.description)}
                   </p>
                 </div>
 
@@ -164,19 +166,17 @@ export function ModelThinkingPicker({
 
         {/* Free API key recommendation banner (dismissible, persisted in localStorage) */}
         {!freeTipDismissed && (
-          <div className="mt-2.5 rounded-xl border border-amber-200/90 dark:border-amber-900/60 bg-amber-50/75 dark:bg-amber-950/30 px-3 py-2.5 text-xs text-amber-950 dark:text-amber-200">
+          <div className="mt-2.5 rounded-xl border border-amber-200/90 dark:border-amber-900/60 bg-amber-50/75 dark:bg-amber-950/30 px-3 py-2.5 text-xs text-amber-950 dark:text-amber-200 text-start">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2 min-w-0">
                 <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">
-                  إذا كان مفتاحك مجانيًا فالأفضل استخدام Gemini Flash-Lite، فهو أسرع وأقل عرضة لأخطاء الازدحام وحدود الاستخدام.
-                </p>
+                <p className="leading-relaxed">{t('modelPicker.freeKeyTip')}</p>
               </div>
               <button
                 type="button"
                 onClick={handleDismissFreeTip}
-                aria-label="إغلاق توصية المفاتيح المجانية"
-                title="إغلاق"
+                aria-label={t('modelPicker.dismissTipAria')}
+                title={t('modelPicker.dismissTipTitle')}
                 className="p-1 rounded-md text-amber-700 dark:text-amber-300 hover:bg-amber-200/60 dark:hover:bg-amber-900/50 transition-colors shrink-0 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
@@ -188,7 +188,7 @@ export function ModelThinkingPicker({
                 onClick={() => onSelectModel(FLASH_LITE_MODEL_ID)}
                 className="inline-flex items-center px-2.5 py-1 rounded-lg bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white text-[11.5px] font-semibold transition-colors cursor-pointer"
               >
-                استخدم Flash-Lite
+                {t('modelPicker.useFlashLite')}
               </button>
             </div>
           </div>
@@ -204,28 +204,29 @@ export function ModelThinkingPicker({
           <div className="flex items-center gap-1.5">
             <Brain className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-              مستوى التفكير
+              {t('modelPicker.thinkingLevel')}
             </span>
           </div>
           {thinkingSupported && (
             <span className="text-[11px] text-slate-400 dark:text-slate-500">
               {activeModel.thinking.mode === 'level'
-                ? 'تحكم بالمستوى'
-                : 'تحكم بميزانية التفكير'}
+                ? t('modelPicker.modeLevel')
+                : t('modelPicker.modeBudget')}
             </span>
           )}
         </div>
 
         {!thinkingSupported ? (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400">
-            {activeModel.thinking.unsupportedReason ||
-              'هذا النموذج لا يدعم التفكير العميق.'}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 text-start">
+            {activeModel.thinking.unsupportedReason
+              ? t(activeModel.thinking.unsupportedReason)
+              : t('modelPicker.unsupportedDefault')}
           </div>
         ) : (
           <>
             <div
               role="radiogroup"
-              aria-label="مستوى التفكير"
+              aria-label={t('modelPicker.thinkingLevelAria')}
               className="grid gap-1 p-1 rounded-xl bg-slate-100 dark:bg-[#0F131B]"
               style={{
                 gridTemplateColumns: `repeat(${activeModel.thinking.supportedLevels.length}, minmax(0, 1fr))`,
@@ -246,18 +247,18 @@ export function ModelThinkingPicker({
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
-                    {THINKING_LABELS[level]}
+                    {t(THINKING_LABELS[level])}
                   </button>
                 );
               })}
             </div>
 
-            <p className="mt-2 text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="mt-2 text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed text-start">
               {!activeModel.thinking.canDisable
-                ? 'هذا النموذج يستخدم التفكير دائماً؛ اختر "تلقائي" أو "منخفض" لسرعة أكبر.'
+                ? t('modelPicker.hintAlwaysOn')
                 : effectiveThinking === 'none'
-                  ? 'التفكير متوقف للحصول على أسرع استجابة ممكنة.'
-                  : 'سيظهر ملخص التفكير (إن توفر) داخل قسم قابل للطي فوق الرد.'}
+                  ? t('modelPicker.hintOff')
+                  : t('modelPicker.hintCollapsible')}
             </p>
           </>
         )}
@@ -273,7 +274,7 @@ export function ModelThinkingPicker({
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        aria-label="اختيار النموذج ومستوى التفكير"
+        aria-label={t('modelPicker.triggerAria')}
         className="inline-flex items-center gap-1.5 sm:gap-2 min-h-[40px] px-2 sm:px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-[#151A24] hover:bg-slate-100 dark:hover:bg-[#1B2230] text-slate-800 dark:text-slate-100 transition-colors max-w-[126px] sm:max-w-[320px] cursor-pointer disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-teal-600"
       >
         <SlidersHorizontal className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
@@ -289,7 +290,7 @@ export function ModelThinkingPicker({
               ·
             </span>
             <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap shrink-0">
-              {THINKING_LABELS[effectiveThinking]}
+              {t(THINKING_LABELS[effectiveThinking])}
             </span>
           </>
         )}
@@ -304,7 +305,7 @@ export function ModelThinkingPicker({
       {isOpen && !isMobile && (
         <div
           role="dialog"
-          aria-label="إعدادات النموذج ومستوى التفكير"
+          aria-label={t('modelPicker.dialogAria')}
           className="absolute top-full mt-2 start-0 z-50 w-[370px] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151A24] p-4 shadow-xl"
         >
           {panelContent}
@@ -325,18 +326,18 @@ export function ModelThinkingPicker({
             <div
               role="dialog"
               aria-modal="true"
-              aria-label="إعدادات النموذج ومستوى التفكير"
+              aria-label={t('modelPicker.dialogAria')}
               className="relative z-10 w-full rounded-t-2xl border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151A24] px-4 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl max-h-[85dvh] overflow-y-auto"
             >
               <div className="mx-auto w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700 mb-3" />
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  النموذج ومستوى التفكير
+                  {t('modelPicker.mobileTitle')}
                 </h2>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  aria-label="إغلاق إعدادات النموذج"
+                  aria-label={t('modelPicker.closeAria')}
                   className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <X className="w-4 h-4" />

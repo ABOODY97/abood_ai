@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import hljs from 'highlight.js';
 import { Check, Copy } from 'lucide-react';
 import type { Components } from 'react-markdown';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface CodeBlockProps {
   language: string;
@@ -11,6 +12,7 @@ interface CodeBlockProps {
 }
 
 function CodeBlock({ language, code }: CodeBlockProps) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   const highlightedHtml = useMemo(() => {
@@ -61,18 +63,18 @@ function CodeBlock({ language, code }: CodeBlockProps) {
         <button
           type="button"
           onClick={handleCopy}
-          aria-label={`نسخ كود ${displayLang}`}
+          aria-label={t('message.copyCodeAria', { lang: displayLang })}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-teal-600"
         >
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-              <span>تم النسخ</span>
+              <span>{t('message.copied')}</span>
             </>
           ) : (
             <>
               <Copy className="w-3.5 h-3.5" />
-              <span>نسخ</span>
+              <span>{t('message.copy')}</span>
             </>
           )}
         </button>

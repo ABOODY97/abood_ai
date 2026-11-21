@@ -1,3 +1,6 @@
+import { hasTranslationKey, t } from '../i18n/index.ts';
+import type { Language } from '../i18n/index.ts';
+
 export type KeyValidationOutcome = 'valid' | 'invalid_key' | 'unverified';
 
 export interface KeyValidationResponse {
@@ -6,7 +9,48 @@ export interface KeyValidationResponse {
   allowSave: boolean;
   status: number | null;
   code: string;
+  retryAfterSeconds?: number;
   message: string;
+}
+
+export function localizeKeyValidationResult(
+  result: KeyValidationResponse,
+  lang: Language
+): KeyValidationResponse {
+  const { code, status, retryAfterSeconds, message } = result;
+
+  if (code === 'RATE_LIMIT' && typeof retryAfterSeconds === 'number' && retryAfterSeconds > 0) {
+    return {
+      ...result,
+      message: t(lang, 'keyValidation.RATE_LIMIT_RETRY', {
+        seconds: retryAfterSeconds,
+      }),
+    };
+  }
+
+  if (code.startsWith('HTTP_')) {
+    const resolvedStatus = status ?? (Number(code.slice(5)) || 500);
+    return {
+      ...result,
+      message: t(lang, 'keyValidation.HTTP_ERROR', { status: resolvedStatus }),
+    };
+  }
+
+  const key = `keyValidation.${code}`;
+  if (hasTranslationKey(lang, key) || hasTranslationKey('ar', key)) {
+    return {
+      ...result,
+      message: t(lang, key, {
+        status: status ?? (code === 'TIMEOUT' ? 408 : 400),
+        seconds: retryAfterSeconds ?? 30,
+      }),
+    };
+  }
+
+  return {
+    ...result,
+    message: message || t(lang, 'keyValidation.UNVERIFIED_GENERIC'),
+  };
 }
 
 function extractUpstreamErrorSignals(rawBodyText: string): string {
