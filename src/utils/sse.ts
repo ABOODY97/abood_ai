@@ -1,4 +1,4 @@
-import type { ThinkingOption } from '../config/models.config';
+import type { ThinkingOption } from '../config/models.config.ts';
 
 export type SseChatEvent =
   | { type: 'meta'; modelId: string; modelName: string; thinkingLevel: ThinkingOption }

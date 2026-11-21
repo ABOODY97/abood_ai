@@ -1,9 +1,9 @@
-import type { ChatError } from '../types/chat';
-import type { ThinkingOption } from '../config/models.config';
-import { DEFAULT_ASSISTANT_NAME } from './assistantName';
-import { MAX_IMAGES_PER_MESSAGE } from './imageFiles';
-import { DEFAULT_LANGUAGE, hasTranslationKey, t } from '../i18n';
-import type { Language } from '../i18n';
+import type { ChatError } from '../types/chat.ts';
+import type { ThinkingOption } from '../config/models.config.ts';
+import { DEFAULT_ASSISTANT_NAME } from './assistantName.ts';
+import { MAX_IMAGES_PER_MESSAGE } from './imageFiles.ts';
+import { DEFAULT_LANGUAGE, hasTranslationKey, t } from '../i18n/index.ts';
+import type { Language } from '../i18n/index.ts';
 
 interface StructuredErrorInput {
   code: string;

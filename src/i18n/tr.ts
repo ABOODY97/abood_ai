@@ -1,4 +1,4 @@
-import type { Translations } from './ar';
+import type { Translations } from './ar.ts';
 
 export const tr: Translations = {
   app: {

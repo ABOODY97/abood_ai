@@ -1,7 +1,7 @@
-import type { ImageAttachment } from '../types/chat';
-import { createId } from './conversations';
-import { DEFAULT_LANGUAGE, t } from '../i18n';
-import type { Language } from '../i18n';
+import type { ImageAttachment } from '../types/chat.ts';
+import { createId } from './conversations.ts';
+import { DEFAULT_LANGUAGE, t } from '../i18n/index.ts';
+import type { Language } from '../i18n/index.ts';
 
 export const MAX_IMAGES_PER_MESSAGE = 6;
 export const MAX_RAW_IMAGE_SIZE_BYTES = 15 * 1024 * 1024; // Accept up to 15MB from mobile cameras before compression

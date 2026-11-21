@@ -1,7 +1,7 @@
-import { ar } from './ar';
-import type { Translations } from './ar';
-import { en } from './en';
-import { tr } from './tr';
+import { ar } from './ar.ts';
+import type { Translations } from './ar.ts';
+import { en } from './en.ts';
+import { tr } from './tr.ts';
 
 export type Language = 'ar' | 'en' | 'tr';
 export type TextDir = 'rtl' | 'ltr';

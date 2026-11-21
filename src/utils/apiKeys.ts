@@ -1,8 +1,8 @@
-import { createId } from './conversations';
-import { localizeKeyValidationResult } from './keyValidation';
-import type { KeyValidationResponse } from './keyValidation';
-import { DEFAULT_LANGUAGE, t } from '../i18n';
-import type { Language } from '../i18n';
+import { createId } from './conversations.ts';
+import { localizeKeyValidationResult } from './keyValidation.ts';
+import type { KeyValidationResponse } from './keyValidation.ts';
+import { DEFAULT_LANGUAGE, t } from '../i18n/index.ts';
+import type { Language } from '../i18n/index.ts';
 
 export const API_KEYS_STORAGE_KEY = 'aboodi_ai_api_keys_v1';
 

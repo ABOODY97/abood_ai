@@ -1,6 +1,6 @@
-import type { ChatMessage, Conversation } from '../types/chat';
-import { DEFAULT_LANGUAGE, t } from '../i18n';
-import type { Language } from '../i18n';
+import type { ChatMessage, Conversation } from '../types/chat.ts';
+import { DEFAULT_LANGUAGE, t } from '../i18n/index.ts';
+import type { Language } from '../i18n/index.ts';
 
 export const STORAGE_KEY = 'aboodi_ai_conversations_v1';
 

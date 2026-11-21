@@ -1,4 +1,4 @@
-import type { ThinkingOption } from '../config/models.config';
+import type { ThinkingOption } from '../config/models.config.ts';
 
 export interface ImageAttachment {
   id: string;
